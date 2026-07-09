@@ -1,0 +1,2 @@
+{"behavior_id":"jbb_placeholder_001","source":"JBB-Behaviors","behavior":"[HARMFUL_BEHAVIOR_PLACEHOLDER]","risk_area":"placeholder","benign":false,"notes":"Sanitized row only; raw behavior text stays in ignored local storage."}
+{"behavior_id":"benign_placeholder_001","source":"local_control","behavior":"[BENIGN_BEHAVIOR_PLACEHOLDER]","risk_area":"benign","benign":true,"notes":"Sanitized benign control row only."}

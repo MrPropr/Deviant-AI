@@ -1,0 +1,55 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files, API keys, and tokens
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.token
+api_keys.json
+secrets.json
+
+# Local raw data and private prompts
+data/raw/
+data/private/
+data/local/
+prompts/raw/
+prompts/private/
+
+# Raw and judged model outputs
+results/raw/
+results/judged/
+results/private/
+
+# Model weights and local model caches
+models/
+model_weights/
+checkpoints/
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.pth
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

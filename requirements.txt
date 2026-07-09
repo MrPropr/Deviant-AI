@@ -1,0 +1,11 @@
+datasets
+pandas
+numpy
+matplotlib
+scikit-learn
+pyyaml
+pytest
+tqdm
+transformers
+accelerate
+bitsandbytes
