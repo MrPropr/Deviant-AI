@@ -64,6 +64,8 @@ def generate_variants(records: list[dict]) -> list[dict]:
     variants: list[dict] = []
     for record in records:
         behavior_text = record.get("behavior", "[HARMFUL_BEHAVIOR_PLACEHOLDER]")
+        sanitized = bool(record.get("sanitized", False))
+        private_raw_text = bool(record.get("private_raw_text", not sanitized))
         for condition in CONDITIONS:
             variants.append(
                 {
@@ -72,9 +74,10 @@ def generate_variants(records: list[dict]) -> list[dict]:
                     "condition": condition,
                     "turns": turns_for_condition(behavior_text, condition),
                     "metadata": {
-                        "sanitized": True,
+                        "sanitized": sanitized,
+                        "private_raw_text": private_raw_text,
                         "benign": bool(record.get("benign", False)),
-                        "notes": "Generated from sanitized placeholder text.",
+                        "notes": "Generated from input record; keep private when private_raw_text is true.",
                     },
                 }
             )
@@ -103,7 +106,8 @@ def main() -> None:
     records = read_jsonl(args.input)
     variants = generate_variants(records)
     write_jsonl(args.output, variants)
-    print(f"Generated {len(variants)} sanitized prompt variant records at {args.output}")
+    private_count = sum(1 for record in variants if record["metadata"].get("private_raw_text"))
+    print(f"Generated {len(variants)} prompt variant records at {args.output} ({private_count} private/raw-tagged)")
 
 
 if __name__ == "__main__":

@@ -107,16 +107,22 @@ pip install -r requirements.txt
 
 ## Basic Workflow Commands
 
-Prepare a sanitized dataset:
+Create the private JailbreakBench pilot dataset:
 
 ```bash
-python -m src.prepare_dataset --input data/sanitized_examples.jsonl --output data/processed/sanitized_dataset.jsonl
+python -m src.prepare_dataset --harmful-size 10 --benign-size 10 --seed 20260709 --output data/private/pilot_dataset.jsonl
+```
+
+Dry-run the same writer without downloading JBB:
+
+```bash
+python -m src.prepare_dataset --dry-run --harmful-size 2 --benign-size 2 --seed 20260709 --output data/private/dry_run_pilot_dataset.jsonl
 ```
 
 Generate private prompt variants:
 
 ```bash
-python -m src.generate_prompt_variants --input data/processed/sanitized_dataset.jsonl --output prompts/private/prompt_variants.jsonl
+python -m src.generate_prompt_variants --input data/private/pilot_dataset.jsonl --output prompts/private/prompt_variants.jsonl
 ```
 
 Run a local placeholder model pass:
@@ -180,7 +186,8 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Placeholder configs and schemas.
 - [x] Lightweight pipeline script stubs.
 - [x] Aggregate analysis and plotting placeholders.
-- [ ] Local benchmark ingestion.
+- [x] JBB pilot split ingestion.
+- [ ] Full local benchmark ingestion.
 - [ ] Human or validated judge workflow.
 - [ ] First Qwen pilot.
 - [ ] Open-weight model comparison.
