@@ -66,14 +66,14 @@ Optional models:
 ## Repository Structure
 
 ```text
-data/       Sanitized public examples and local data notes.
-prompts/    Prompt variant schema and private prompt-generation notes.
+data/       Sanitized public examples; raw local data stays ignored.
+prompts/    Prompt variant schema; private prompt variants stay ignored.
 configs/    Model and experiment configuration files.
 src/        Lightweight, safe pipeline scripts.
 notebooks/  Pilot analysis notebooks.
-results/    Notes for ignored raw and judged outputs.
-tables/     Aggregate CSV tables suitable for public release.
-figures/    Aggregate figures suitable for public release.
+results/    Placeholder directory; raw and judged outputs stay ignored.
+tables/     Placeholder directory for aggregate public CSV tables.
+figures/    Placeholder directory for aggregate public figures.
 docs/       Rubric, ethics notes, and experiment log.
 tests/      Schema and config tests.
 ```

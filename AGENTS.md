@@ -10,14 +10,14 @@ Never turn this repository into a jailbreak prompt collection. Public files must
 
 ## Repository Layout
 
-- `data/`: public sanitized examples plus notes about ignored local data.
+- `data/`: public sanitized examples plus ignored local raw data paths.
 - `prompts/`: public prompt schema plus ignored private prompt variants.
 - `configs/`: model and experiment configuration.
 - `src/`: safe, lightweight pipeline scripts.
 - `notebooks/`: pilot notebooks that use sanitized or aggregate data.
-- `results/`: public README plus ignored raw and judged output folders.
-- `tables/`: aggregate public CSV tables.
-- `figures/`: aggregate public figures.
+- `results/`: `.gitkeep` plus ignored raw and judged output folders.
+- `tables/`: `.gitkeep` plus aggregate public CSV tables.
+- `figures/`: `.gitkeep` plus aggregate public figures.
 - `docs/`: scoring, ethics, and experiment logs.
 - `tests/`: schema and config checks.
 
