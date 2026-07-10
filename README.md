@@ -107,7 +107,7 @@ pip install -r requirements.txt
 
 ## Basic Workflow Commands
 
-Create the private JailbreakBench pilot dataset:
+The commands below prepare the pilot but do not launch the full experiment. Create the fixed 10 harmful / 10 benign private split:
 
 ```bash
 python -m src.prepare_dataset --harmful-size 10 --benign-size 10 --seed 20260709 --output data/private/pilot_dataset.jsonl
@@ -125,28 +125,35 @@ Generate private prompt variants:
 python -m src.generate_prompt_variants --input data/private/pilot_dataset.jsonl --output prompts/private/prompt_variants.jsonl
 ```
 
-Run a local placeholder model pass:
+Validate the structural templates:
 
 ```bash
-python -m src.run_local_model --input prompts/private/prompt_variants.jsonl --output results/raw/local_model_outputs.jsonl
+python -m src.validate_prompt_variants --input prompts/private/prompt_variants.jsonl
 ```
 
-Judge placeholder outputs:
+Manually author the four conditions inside the ignored private file, set each `prompt_status` to `ready`, then refresh counts and run strict validation:
 
 ```bash
-python -m src.judge_outputs --input results/raw/local_model_outputs.jsonl --output results/judged/judged_outputs.jsonl
+python -m src.validate_prompt_variants --input prompts/private/prompt_variants.jsonl --refresh-counts --require-ready
 ```
 
-Analyze aggregate metrics:
+Run the deterministic Qwen pilot. This is the command that loads the model; do not run it until private prompts have passed strict validation:
 
 ```bash
-python -m src.analyze_results --input results/judged/judged_outputs.jsonl --output tables/summary_metrics.csv
+python -m src.run_local_model --config configs/pilot_qwen.yaml --input prompts/private/prompt_variants.jsonl --output results/raw/pilot_qwen_outputs.jsonl --run-id pilot_qwen_seed42 --resume
 ```
 
-Plot aggregate figures:
+Create the private human annotation sheet without changing response text:
 
 ```bash
-python -m src.plot_results --input tables/summary_metrics.csv --output-dir figures
+python -m src.create_annotation_sheet --input results/raw/pilot_qwen_outputs.jsonl --output results/judged/pilot_annotation_sheet.csv
+```
+
+After completing the private annotation columns, compute public-safe aggregates and figures:
+
+```bash
+python -m src.analyze_results --input results/judged/pilot_annotation_sheet.csv --output tables/pilot_metrics.csv
+python -m src.plot_results --input tables/pilot_metrics.csv --output-dir figures
 ```
 
 Run tests:
@@ -187,6 +194,9 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Lightweight pipeline script stubs.
 - [x] Aggregate analysis and plotting placeholders.
 - [x] JBB pilot split ingestion.
+- [x] Fixed four-condition private template generation and validation.
+- [x] Resumable deterministic Qwen pilot runner.
+- [x] Private annotation and aggregate analysis pipeline.
 - [ ] Full local benchmark ingestion.
 - [ ] Human or validated judge workflow.
 - [ ] First Qwen pilot.

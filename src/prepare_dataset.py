@@ -39,19 +39,23 @@ def write_jsonl(path: Path, records: Iterable[dict]) -> None:
             handle.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
 
 
-def load_jbb_rows(split: str) -> list[dict]:
+def load_jbb_splits() -> tuple[list[dict], list[dict]]:
     try:
         from datasets import load_dataset
     except ImportError as exc:
         raise RuntimeError("Install the datasets package before loading JBB-Behaviors.") from exc
 
     dataset = load_dataset(DATASET_ID, DATASET_CONFIG)
-    if split not in dataset:
+    missing_splits = {"harmful", "benign"} - set(dataset.keys())
+    if missing_splits:
         available = ", ".join(dataset.keys())
-        raise ValueError(f"Dataset split '{split}' not found. Available splits: {available}")
-    rows = [dict(row) for row in dataset[split]]
-    validate_jbb_rows(rows, split)
-    return rows
+        missing = ", ".join(sorted(missing_splits))
+        raise ValueError(f"Dataset splits missing ({missing}). Available splits: {available}")
+    harmful_rows = [dict(row) for row in dataset["harmful"]]
+    benign_rows = [dict(row) for row in dataset["benign"]]
+    validate_jbb_rows(harmful_rows, "harmful")
+    validate_jbb_rows(benign_rows, "benign")
+    return harmful_rows, benign_rows
 
 
 def validate_jbb_rows(rows: list[dict], split: str) -> None:
@@ -74,8 +78,11 @@ def sample_rows(rows: list[dict], size: int, rng: random.Random, split: str) -> 
 
 def normalize_jbb_row(row: dict, split: str, ordinal: int) -> dict:
     original_index = row.get("Index", ordinal)
+    scenario_id = f"jbb_{split}_{original_index}"
     return {
-        "behavior_id": f"jbb_{split}_{original_index}",
+        "scenario_id": scenario_id,
+        "behavior_id": scenario_id,
+        "label": split,
         "dataset": DATASET_ID,
         "dataset_config": DATASET_CONFIG,
         "split": split,
@@ -164,8 +171,7 @@ def main() -> None:
             benign_rows = make_dry_run_rows("benign", args.benign_size)
             source_label = "placeholder dry-run rows"
         else:
-            harmful_rows = load_jbb_rows("harmful")
-            benign_rows = load_jbb_rows("benign")
+            harmful_rows, benign_rows = load_jbb_splits()
             source_label = f"{DATASET_ID}/{DATASET_CONFIG}"
 
         records = build_pilot_records(

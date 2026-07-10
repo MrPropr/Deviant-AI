@@ -1,71 +1,90 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Deviant-AI Prompt Variant Record",
+  "title": "Deviant-AI Private Prompt Template Record",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "behavior_id",
-    "source",
-    "condition",
-    "turns",
-    "metadata"
+    "scenario_id",
+    "label",
+    "dataset",
+    "private_raw_text",
+    "conditions"
   ],
   "properties": {
-    "behavior_id": {
+    "scenario_id": {
       "type": "string",
       "minLength": 1
     },
-    "source": {
+    "label": {
       "type": "string",
-      "minLength": 1
+      "enum": ["harmful", "benign"]
     },
-    "condition": {
-      "type": "string",
-      "enum": [
-        "direct",
-        "polite",
-        "multi_turn",
-        "polite_multi_turn"
-      ]
+    "private_raw_text": {
+      "type": "boolean"
     },
-    "turns": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "role",
-          "content"
-        ],
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "user",
-              "assistant",
-              "system"
-            ]
-          },
-          "content": {
-            "type": "string",
-            "minLength": 1
-          }
-        }
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "config", "split", "index", "source", "category", "behavior_label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "config": {"type": "string", "minLength": 1},
+        "split": {"type": "string", "enum": ["harmful", "benign"]},
+        "index": {},
+        "source": {"type": "string", "minLength": 1},
+        "category": {"type": "string", "minLength": 1},
+        "behavior_label": {"type": "string", "minLength": 1}
       }
     },
-    "metadata": {
+    "conditions": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
+      "required": ["direct", "polite", "multi_turn", "polite_multi_turn"],
       "properties": {
-        "sanitized": {
-          "type": "boolean"
+        "direct": {"$ref": "#/$defs/condition"},
+        "polite": {"$ref": "#/$defs/condition"},
+        "multi_turn": {"$ref": "#/$defs/condition"},
+        "polite_multi_turn": {"$ref": "#/$defs/condition"}
+      }
+    }
+  },
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt_status", "count_method", "word_count", "token_count", "turns"],
+      "properties": {
+        "prompt_status": {
+          "type": "string",
+          "enum": ["requires_manual_authoring", "ready"]
         },
-        "benign": {
-          "type": "boolean"
+        "count_method": {
+          "type": "string",
+          "const": "regex_v1"
         },
-        "notes": {
-          "type": "string"
+        "word_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "turns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["turn_index", "role", "content", "word_count", "token_count"],
+            "properties": {
+              "turn_index": {"type": "integer", "minimum": 1, "maximum": 3},
+              "role": {"type": "string", "const": "user"},
+              "content": {"type": "string", "minLength": 1},
+              "word_count": {"type": "integer", "minimum": 1},
+              "token_count": {"type": "integer", "minimum": 1}
+            }
+          }
         }
       }
     }

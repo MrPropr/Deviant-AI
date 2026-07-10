@@ -1,14 +1,14 @@
-"""Create public-safe aggregate figures from summary metric tables."""
+"""Generate the five public-safe pilot figures from aggregate metrics."""
 
 from __future__ import annotations
 
 import argparse
 import csv
-import html
+import math
 from pathlib import Path
 
 
-CONDITION_ORDER = ["direct", "polite", "multi_turn", "polite_multi_turn"]
+CONDITIONS = ("direct", "polite", "multi_turn", "polite_multi_turn")
 
 
 def existing_file(value: str) -> Path:
@@ -32,97 +32,104 @@ def read_rows(path: Path) -> list[dict]:
         return list(csv.DictReader(handle))
 
 
-def to_float(value: str) -> float | None:
-    if value in ("", None):
-        return None
+def value(row: dict, field: str) -> float:
     try:
-        return float(value)
-    except ValueError:
-        return None
+        return float(row.get(field, ""))
+    except (TypeError, ValueError):
+        return math.nan
 
 
-def ordered(values: set[str], preferred: list[str]) -> list[str]:
-    preferred_values = [value for value in preferred if value in values]
-    extra_values = sorted(value for value in values if value not in preferred)
-    return preferred_values + extra_values
+def load_matplotlib():
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except Exception as exc:
+        raise RuntimeError("A working matplotlib/numpy installation is required to generate figures.") from exc
+    return plt
 
 
-def write_svg_bar_chart(rows: list[dict], metric: str, title: str, path: Path) -> None:
-    filtered = [row for row in rows if to_float(row.get(metric, "")) is not None]
-    if not filtered:
-        return
+def grouped_bar(plt, rows: list[dict], field: str, title: str, ylabel: str, path: Path) -> None:
+    models = sorted({row["model_id"] for row in rows})
+    width = 0.8 / max(len(models), 1)
+    figure, axis = plt.subplots(figsize=(10, 5.5))
+    for model_index, model_id in enumerate(models):
+        model_rows = {row["condition"]: row for row in rows if row["model_id"] == model_id}
+        positions = [index - 0.4 + width / 2 + model_index * width for index in range(len(CONDITIONS))]
+        axis.bar(positions, [value(model_rows.get(condition, {}), field) for condition in CONDITIONS], width, label=model_id)
+    axis.set_xticks(range(len(CONDITIONS)), CONDITIONS)
+    axis.set_ylim(0, 1)
+    axis.set_title(title)
+    axis.set_ylabel(ylabel)
+    axis.legend()
+    figure.tight_layout()
+    figure.savefig(path, dpi=180)
+    plt.close(figure)
 
-    conditions = ordered({row["condition"] for row in filtered}, CONDITION_ORDER)
-    models = sorted({row["model_id"] for row in filtered})
-    values = {
-        (row["condition"], row["model_id"]): to_float(row.get(metric, ""))
-        for row in filtered
-    }
 
-    width = 920
-    height = 520
-    margin_left = 95
-    margin_right = 35
-    margin_top = 55
-    margin_bottom = 115
-    chart_width = width - margin_left - margin_right
-    chart_height = height - margin_top - margin_bottom
-    group_width = chart_width / max(len(conditions), 1)
-    bar_width = max(group_width / max(len(models), 1) * 0.68, 8)
-    colors = ["#31688e", "#35b779", "#fdae61", "#7b3294", "#80cdc1"]
+def plot_asr_heatmap(plt, rows: list[dict], path: Path) -> None:
+    models = sorted({row["model_id"] for row in rows})
+    matrix = []
+    for model_id in models:
+        model_rows = {row["condition"]: row for row in rows if row["model_id"] == model_id}
+        matrix.append([value(model_rows.get(condition, {}), "strict_asr") for condition in CONDITIONS])
+    figure, axis = plt.subplots(figsize=(9, max(3, 0.7 * len(models) + 2)))
+    image = axis.imshow(matrix, vmin=0, vmax=1, cmap="viridis", aspect="auto")
+    axis.set_xticks(range(len(CONDITIONS)), CONDITIONS)
+    axis.set_yticks(range(len(models)), models)
+    axis.set_title("Strict ASR by Model and Condition")
+    for row_index, row_values in enumerate(matrix):
+        for column_index, cell in enumerate(row_values):
+            if not math.isnan(cell):
+                axis.text(column_index, row_index, f"{cell:.2f}", ha="center", va="center", color="white")
+    figure.colorbar(image, ax=axis, label="Strict ASR")
+    figure.tight_layout()
+    figure.savefig(path, dpi=180)
+    plt.close(figure)
 
-    lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        '<rect width="100%" height="100%" fill="white"/>',
-        f'<text x="{width / 2:.1f}" y="30" text-anchor="middle" font-family="Arial" font-size="20">{html.escape(title)}</text>',
-        f'<line x1="{margin_left}" y1="{margin_top + chart_height}" x2="{width - margin_right}" y2="{margin_top + chart_height}" stroke="#333"/>',
-        f'<line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{margin_top + chart_height}" stroke="#333"/>',
-    ]
 
-    for tick in range(6):
-        value = tick / 5
-        y = margin_top + chart_height - value * chart_height
-        lines.append(f'<line x1="{margin_left - 5}" y1="{y:.1f}" x2="{width - margin_right}" y2="{y:.1f}" stroke="#e5e5e5"/>')
-        lines.append(f'<text x="{margin_left - 10}" y="{y + 4:.1f}" text-anchor="end" font-family="Arial" font-size="12">{value:.1f}</text>')
+def plot_discovery_curve(plt, rows: list[dict], path: Path) -> None:
+    figure, axis = plt.subplots(figsize=(8, 5.5))
+    for row in rows:
+        if row["condition"] not in {"multi_turn", "polite_multi_turn"}:
+            continue
+        rates = [value(row, f"turn_{turn}_discovery_rate") for turn in (1, 2, 3)]
+        axis.plot([1, 2, 3], rates, marker="o", label=f"{row['model_id']} / {row['condition']}")
+    axis.set_xticks([1, 2, 3])
+    axis.set_ylim(0, 1)
+    axis.set_xlabel("Turn")
+    axis.set_ylabel("Cumulative harmful discovery rate")
+    axis.set_title("Multi-turn Harmful Discovery Curve")
+    axis.legend()
+    figure.tight_layout()
+    figure.savefig(path, dpi=180)
+    plt.close(figure)
 
-    for condition_index, condition in enumerate(conditions):
-        group_x = margin_left + condition_index * group_width
-        label_x = group_x + group_width / 2
-        lines.append(
-            f'<text x="{label_x:.1f}" y="{height - 70}" text-anchor="middle" '
-            f'font-family="Arial" font-size="12">{html.escape(condition)}</text>'
-        )
-        for model_index, model_id in enumerate(models):
-            value = values.get((condition, model_id))
-            if value is None:
-                continue
-            x = group_x + (model_index + 0.18) * (group_width / max(len(models), 1))
-            bar_height = max(min(value, 1.0), 0.0) * chart_height
-            y = margin_top + chart_height - bar_height
-            color = colors[model_index % len(colors)]
-            lines.append(
-                f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" height="{bar_height:.1f}" fill="{color}"/>'
-            )
 
-    legend_x = margin_left
-    legend_y = height - 42
-    for index, model_id in enumerate(models):
-        x = legend_x + index * 180
-        color = colors[index % len(colors)]
-        lines.append(f'<rect x="{x}" y="{legend_y}" width="12" height="12" fill="{color}"/>')
-        lines.append(
-            f'<text x="{x + 18}" y="{legend_y + 11}" font-family="Arial" font-size="12">{html.escape(model_id)}</text>'
-        )
-
-    lines.append("</svg>")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+def plot_safety_utility(plt, rows: list[dict], path: Path) -> None:
+    figure, axis = plt.subplots(figsize=(8, 5.5))
+    for row in rows:
+        benign_success = value(row, "benign_success_rate")
+        strict_asr = value(row, "strict_asr")
+        if math.isnan(benign_success) or math.isnan(strict_asr):
+            continue
+        axis.scatter(benign_success, 1.0 - strict_asr)
+        axis.annotate(f"{row['model_id']} / {row['condition']}", (benign_success, 1.0 - strict_asr), fontsize=8)
+    axis.set_xlim(0, 1)
+    axis.set_ylim(0, 1)
+    axis.set_xlabel("Benign success rate (utility)")
+    axis.set_ylabel("1 - strict ASR (safety)")
+    axis.set_title("Safety versus Utility")
+    figure.tight_layout()
+    figure.savefig(path, dpi=180)
+    plt.close(figure)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", type=existing_file, required=True, help="Aggregate summary CSV file.")
-    parser.add_argument("--output-dir", type=output_dir, default=Path("figures"), help="Figure output directory.")
+    parser.add_argument("--input", type=existing_file, required=True, help="Aggregate pilot metrics CSV.")
+    parser.add_argument("--output-dir", type=output_dir, default=Path("figures"))
     return parser.parse_args()
 
 
@@ -130,25 +137,26 @@ def main() -> None:
     args = parse_args()
     rows = read_rows(args.input)
     if not rows:
-        raise SystemExit(f"No rows to plot in {args.input}")
+        raise SystemExit(f"No aggregate rows found in {args.input}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        plt = load_matplotlib()
+    except RuntimeError as exc:
+        raise SystemExit(f"Error: {exc}") from exc
 
     outputs = [
-        (args.output_dir / "asr_by_condition.svg", "attack_success_rate", "Attack Success Rate By Condition"),
-        (
-            args.output_dir / "mean_harmfulness_by_condition.svg",
-            "mean_harmfulness_score",
-            "Mean Harmfulness By Condition",
-        ),
+        args.output_dir / "asr_heatmap.png",
+        args.output_dir / "harmfulness_score_bar.png",
+        args.output_dir / "refusal_rate_chart.png",
+        args.output_dir / "multi_turn_discovery_curve.png",
+        args.output_dir / "safety_utility_scatter.png",
     ]
-
-    written = []
-    for path, metric, title in outputs:
-        write_svg_bar_chart(rows, metric, title, path)
-        if path.exists():
-            written.append(path)
-
-    print(f"Wrote {len(written)} figures: {', '.join(str(path) for path in written)}")
+    plot_asr_heatmap(plt, rows, outputs[0])
+    grouped_bar(plt, rows, "mean_harmfulness_score", "Mean Harmfulness Score", "Mean score", outputs[1])
+    grouped_bar(plt, rows, "refusal_rate", "Refusal Rate", "Refusal rate", outputs[2])
+    plot_discovery_curve(plt, rows, outputs[3])
+    plot_safety_utility(plt, rows, outputs[4])
+    print(f"Generated {len(outputs)} aggregate figures in {args.output_dir}")
 
 
 if __name__ == "__main__":

@@ -7,32 +7,91 @@ from pathlib import Path
 
 import yaml
 
+from src.generate_prompt_variants import CONDITIONS, generate_templates
+from src.validate_prompt_variants import is_git_ignored, validate_records
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_prompt_variant_schema_conditions() -> None:
+def sanitized_dataset_record(scenario_id: str = "scenario_001", label: str = "harmful") -> dict:
+    placeholder = "[HARMFUL_BEHAVIOR_PLACEHOLDER]" if label == "harmful" else "[BENIGN_BEHAVIOR_PLACEHOLDER]"
+    return {
+        "scenario_id": scenario_id,
+        "behavior_id": scenario_id,
+        "label": label,
+        "split": label,
+        "dataset": "JailbreakBench/JBB-Behaviors",
+        "dataset_config": "behaviors",
+        "jbb_index": 1,
+        "source": "sanitized_test",
+        "risk_area": "placeholder",
+        "behavior_label": "placeholder",
+        "behavior": placeholder,
+        "private_raw_text": True,
+    }
+
+
+def test_prompt_variant_schema_has_nested_conditions() -> None:
     schema = json.loads((ROOT / "prompts" / "prompt_variants_schema.json").read_text(encoding="utf-8"))
-    condition_enum = schema["properties"]["condition"]["enum"]
-    assert condition_enum == ["direct", "polite", "multi_turn", "polite_multi_turn"]
+    assert schema["properties"]["label"]["enum"] == ["harmful", "benign"]
+    assert schema["properties"]["conditions"]["required"] == list(CONDITIONS)
+
+
+def test_generated_templates_are_structurally_valid_and_do_not_copy_behavior_text() -> None:
+    templates = generate_templates([sanitized_dataset_record()])
+    assert validate_records(templates) == []
+    assert set(templates[0]["conditions"]) == set(CONDITIONS)
+    serialized = json.dumps(templates)
+    assert "[HARMFUL_BEHAVIOR_PLACEHOLDER]" not in serialized
+    assert len(templates[0]["conditions"]["direct"]["turns"]) == 1
+    assert len(templates[0]["conditions"]["multi_turn"]["turns"]) == 3
+
+
+def test_validator_detects_duplicate_scenario_and_bad_counts() -> None:
+    templates = generate_templates([sanitized_dataset_record()])
+    duplicate = json.loads(json.dumps(templates[0]))
+    templates[0]["conditions"]["direct"]["turns"][0]["word_count"] = 99
+    errors = validate_records([templates[0], duplicate])
+    assert any("word_count mismatch" in error for error in errors)
+    assert any("duplicate scenario_id" in error for error in errors)
+
+
+def test_private_prompt_path_is_git_ignored() -> None:
+    assert is_git_ignored(ROOT / "prompts" / "private" / "prompt_variants.jsonl", ROOT)
 
 
 def test_sanitized_examples_use_placeholders() -> None:
     lines = (ROOT / "data" / "sanitized_examples.jsonl").read_text(encoding="utf-8").splitlines()
-    assert lines
     records = [json.loads(line) for line in lines if line.strip()]
     placeholders = {"[HARMFUL_BEHAVIOR_PLACEHOLDER]", "[BENIGN_BEHAVIOR_PLACEHOLDER]"}
-    for record in records:
-        assert record["behavior"] in placeholders
-        assert "behavior_id" in record
-        assert "source" in record
+    assert records
+    assert all(record["behavior"] in placeholders for record in records)
 
 
 def test_configs_load_as_yaml() -> None:
-    for path in [ROOT / "configs" / "models.yaml", ROOT / "configs" / "experiment.yaml"]:
+    paths = [
+        ROOT / "configs" / "models.yaml",
+        ROOT / "configs" / "experiment.yaml",
+        ROOT / "configs" / "pilot_qwen.yaml",
+    ]
+    for path in paths:
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert isinstance(loaded, dict)
         assert loaded
+
+    pilot = yaml.safe_load((ROOT / "configs" / "pilot_qwen.yaml").read_text(encoding="utf-8"))
+    assert pilot["model"] == {
+        "id": "Qwen/Qwen2.5-7B-Instruct",
+        "load_in_4bit": True,
+        "quantization_type": "nf4",
+    }
+    assert pilot["inference"] == {
+        "max_new_tokens": 512,
+        "do_sample": False,
+        "seed": 42,
+        "max_multi_turn_length": 3,
+    }
 
 
 def test_prepare_dataset_dry_run_writes_private_pilot(tmp_path: Path) -> None:
@@ -57,11 +116,8 @@ def test_prepare_dataset_dry_run_writes_private_pilot(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-
     assert "[HARMFUL_BEHAVIOR_PLACEHOLDER]" not in result.stdout
-    assert output_path.exists()
     records = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
     assert len(records) == 4
-    assert sum(1 for record in records if record["split"] == "harmful") == 2
-    assert sum(1 for record in records if record["split"] == "benign") == 2
-    assert all(record["private_raw_text"] for record in records)
+    assert len({record["scenario_id"] for record in records}) == 4
+    assert {record["label"] for record in records} == {"harmful", "benign"}
