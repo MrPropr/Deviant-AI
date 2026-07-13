@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from src.generate_prompt_variants import generate_templates
-from src.run_local_model import run_prompt_records
+from src.run_local_model import resolve_settings, run_prompt_records
 
 
 class RecordingBackend:
@@ -39,6 +41,32 @@ def scenario_record(scenario_id: str) -> dict:
 
 def read_output(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def pilot_config(compute_dtype: str = "float16") -> dict:
+    return {
+        "model": {
+            "id": "Qwen/Qwen2.5-7B-Instruct",
+            "load_in_4bit": True,
+            "quantization_type": "nf4",
+            "compute_dtype": compute_dtype,
+        },
+        "inference": {
+            "max_new_tokens": 512,
+            "do_sample": False,
+            "seed": 42,
+            "max_multi_turn_length": 3,
+        },
+    }
+
+
+def test_compute_dtype_is_loaded_from_config() -> None:
+    assert resolve_settings(pilot_config())["compute_dtype"] == "float16"
+
+
+def test_unsupported_compute_dtype_is_rejected() -> None:
+    with pytest.raises(ValueError, match="model.compute_dtype"):
+        resolve_settings(pilot_config("int8"))
 
 
 def test_resume_does_not_duplicate_completed_responses(tmp_path: Path) -> None:

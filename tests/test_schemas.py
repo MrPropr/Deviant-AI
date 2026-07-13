@@ -85,6 +85,7 @@ def test_configs_load_as_yaml() -> None:
         "id": "Qwen/Qwen2.5-7B-Instruct",
         "load_in_4bit": True,
         "quantization_type": "nf4",
+        "compute_dtype": "float16",
     }
     assert pilot["inference"] == {
         "max_new_tokens": 512,

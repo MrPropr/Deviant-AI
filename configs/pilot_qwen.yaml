@@ -2,6 +2,7 @@ model:
   id: Qwen/Qwen2.5-7B-Instruct
   load_in_4bit: true
   quantization_type: nf4
+  compute_dtype: float16
 
 inference:
   max_new_tokens: 512

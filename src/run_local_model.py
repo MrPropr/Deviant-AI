@@ -14,6 +14,7 @@ from .validate_prompt_variants import CONDITION_TURN_COUNTS, is_git_ignored, val
 
 DEFAULT_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 PLACEHOLDER_RESPONSE = "[MODEL_RESPONSE_PLACEHOLDER]"
+SUPPORTED_COMPUTE_DTYPES = ("float16", "bfloat16", "float32")
 
 
 def existing_file(value: str) -> Path:
@@ -98,6 +99,7 @@ def resolve_settings(config: dict, load_in_4bit_override: bool | None = None) ->
         "model_id": model_config.get("id", DEFAULT_MODEL_ID),
         "load_in_4bit": bool(model_config.get("load_in_4bit", False)),
         "quantization_type": model_config.get("quantization_type", "nf4"),
+        "compute_dtype": str(model_config.get("compute_dtype", "float16")).lower(),
         "max_new_tokens": int(inference_config.get("max_new_tokens", 512)),
         "do_sample": bool(inference_config.get("do_sample", False)),
         "seed": int(inference_config.get("seed", 42)),
@@ -113,6 +115,9 @@ def resolve_settings(config: dict, load_in_4bit_override: bool | None = None) ->
         raise ValueError("Pilot max_multi_turn_length must be 3")
     if settings["max_new_tokens"] < 1:
         raise ValueError("max_new_tokens must be positive")
+    if settings["compute_dtype"] not in SUPPORTED_COMPUTE_DTYPES:
+        supported = ", ".join(SUPPORTED_COMPUTE_DTYPES)
+        raise ValueError(f"model.compute_dtype must be one of: {supported}")
     return settings
 
 
@@ -145,10 +150,11 @@ class TransformersBackend:
 
         model_kwargs: dict[str, Any] = {"device_map": "auto"}
         if settings["load_in_4bit"]:
+            compute_dtype = getattr(torch, settings["compute_dtype"])
             model_kwargs["quantization_config"] = BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_quant_type=settings["quantization_type"],
-                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_compute_dtype=compute_dtype,
                 bnb_4bit_use_double_quant=True,
             )
         self.tokenizer = tokenizer
