@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,26 @@ from .validate_prompt_variants import CONDITION_TURN_COUNTS, is_git_ignored, val
 DEFAULT_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 PLACEHOLDER_RESPONSE = "[MODEL_RESPONSE_PLACEHOLDER]"
 SUPPORTED_COMPUTE_DTYPES = ("float16", "bfloat16", "float32")
+FINISH_REASONS = ("eos", "length", "other", "dry_run")
+
+
+@dataclass(frozen=True)
+class GenerationResult:
+    response_text: str
+    generated_token_count: int
+    hit_max_new_tokens: bool
+    finish_reason: str
+
+    def __post_init__(self) -> None:
+        if isinstance(self.generated_token_count, bool) or not isinstance(self.generated_token_count, int):
+            raise ValueError("generated_token_count must be an integer")
+        if self.generated_token_count < 0:
+            raise ValueError("generated_token_count must not be negative")
+        if not isinstance(self.hit_max_new_tokens, bool):
+            raise ValueError("hit_max_new_tokens must be boolean")
+        if self.finish_reason not in FINISH_REASONS:
+            allowed = ", ".join(FINISH_REASONS)
+            raise ValueError(f"finish_reason must be one of: {allowed}")
 
 
 def existing_file(value: str) -> Path:
@@ -59,6 +80,40 @@ def count_words(text: str) -> int:
 
 def count_tokens(text: str) -> int:
     return len(re.findall(r"\w+|[^\w\s]", text, flags=re.UNICODE))
+
+
+def token_id_to_int(token_id: Any) -> int:
+    item = getattr(token_id, "item", None)
+    return int(item() if callable(item) else token_id)
+
+
+def generation_termination_metadata(
+    generated_token_ids: Any,
+    max_new_tokens: int,
+    eos_token_ids: int | list[int] | tuple[int, ...] | None,
+) -> tuple[int, bool, str]:
+    if max_new_tokens < 1:
+        raise ValueError("max_new_tokens must be positive")
+    generated_token_count = len(generated_token_ids)
+    hit_max_new_tokens = generated_token_count >= max_new_tokens
+    if eos_token_ids is None:
+        normalized_eos_ids: set[int] = set()
+    elif isinstance(eos_token_ids, int):
+        normalized_eos_ids = {eos_token_ids}
+    else:
+        normalized_eos_ids = {token_id_to_int(token_id) for token_id in eos_token_ids}
+
+    ended_with_eos = (
+        generated_token_count > 0
+        and token_id_to_int(generated_token_ids[-1]) in normalized_eos_ids
+    )
+    if ended_with_eos:
+        finish_reason = "eos"
+    elif hit_max_new_tokens:
+        finish_reason = "length"
+    else:
+        finish_reason = "other"
+    return generated_token_count, hit_max_new_tokens, finish_reason
 
 
 def response_key(scenario_id: str, condition: str, turn_index: int) -> tuple[str, str, int]:
@@ -126,9 +181,14 @@ class DryRunBackend:
 
     model_id = "dry-run-placeholder-model"
 
-    def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> str:
+    def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> GenerationResult:
         del messages, max_new_tokens, do_sample
-        return PLACEHOLDER_RESPONSE
+        return GenerationResult(
+            response_text=PLACEHOLDER_RESPONSE,
+            generated_token_count=0,
+            hit_max_new_tokens=False,
+            finish_reason="dry_run",
+        )
 
 
 class TransformersBackend:
@@ -161,7 +221,7 @@ class TransformersBackend:
         self.model = AutoModelForCausalLM.from_pretrained(self.model_id, **model_kwargs)
         self.model.eval()
 
-    def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> str:
+    def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> GenerationResult:
         prompt = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
@@ -181,7 +241,17 @@ class TransformersBackend:
             )
         prompt_length = inputs["input_ids"].shape[-1]
         new_tokens = generated[0][prompt_length:]
-        return self.tokenizer.decode(new_tokens, skip_special_tokens=True)
+        generated_token_count, hit_max_new_tokens, finish_reason = generation_termination_metadata(
+            new_tokens,
+            max_new_tokens=max_new_tokens,
+            eos_token_ids=self.tokenizer.eos_token_id,
+        )
+        return GenerationResult(
+            response_text=self.tokenizer.decode(new_tokens, skip_special_tokens=True),
+            generated_token_count=generated_token_count,
+            hit_max_new_tokens=hit_max_new_tokens,
+            finish_reason=finish_reason,
+        )
 
 
 def is_cuda_oom(exc: BaseException) -> bool:
@@ -198,7 +268,7 @@ def build_response_record(
     scenario: dict,
     condition: str,
     turn: dict,
-    response_text: str,
+    generation_result: GenerationResult,
     model_id: str,
     run_id: str,
     context_message_count: int,
@@ -215,9 +285,12 @@ def build_response_record(
         "model_id": model_id,
         "run_id": run_id,
         "generation_status": "ok",
-        "response_text": response_text,
-        "response_word_count": count_words(response_text),
-        "response_token_count": count_tokens(response_text),
+        "response_text": generation_result.response_text,
+        "response_word_count": count_words(generation_result.response_text),
+        "response_token_count": count_tokens(generation_result.response_text),
+        "generated_token_count": generation_result.generated_token_count,
+        "hit_max_new_tokens": generation_result.hit_max_new_tokens,
+        "finish_reason": generation_result.finish_reason,
         "input_word_count": turn["word_count"],
         "input_token_count": turn["token_count"],
         "context_message_count": context_message_count,
@@ -268,7 +341,7 @@ def run_prompt_records(
                     resumed_count += 1
                     continue
                 try:
-                    response_text = backend.generate(
+                    generation_result = backend.generate(
                         [dict(message) for message in messages],
                         max_new_tokens=max_new_tokens,
                         do_sample=do_sample,
@@ -288,7 +361,7 @@ def run_prompt_records(
                     scenario=scenario,
                     condition=condition,
                     turn=turn,
-                    response_text=response_text,
+                    generation_result=generation_result,
                     model_id=expected_model_id,
                     run_id=run_id,
                     context_message_count=len(messages),
@@ -296,7 +369,7 @@ def run_prompt_records(
                 append_jsonl(output_path, response_record)
                 completed[key] = response_record
                 generated_count += 1
-                messages.append({"role": "assistant", "content": response_text})
+                messages.append({"role": "assistant", "content": generation_result.response_text})
 
     return {
         "generated": generated_count,

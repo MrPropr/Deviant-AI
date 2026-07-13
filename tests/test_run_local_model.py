@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 
 from src.generate_prompt_variants import generate_templates
-from src.run_local_model import resolve_settings, run_prompt_records
+from src.run_local_model import (
+    DryRunBackend,
+    GenerationResult,
+    generation_termination_metadata,
+    resolve_settings,
+    run_prompt_records,
+)
 
 
 class RecordingBackend:
@@ -15,11 +21,16 @@ class RecordingBackend:
     def __init__(self) -> None:
         self.calls: list[list[dict]] = []
 
-    def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> str:
+    def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> GenerationResult:
         assert max_new_tokens == 8
         assert do_sample is False
         self.calls.append([dict(message) for message in messages])
-        return "[MODEL_RESPONSE_PLACEHOLDER]"
+        return GenerationResult(
+            response_text="[MODEL_RESPONSE_PLACEHOLDER]",
+            generated_token_count=3,
+            hit_max_new_tokens=False,
+            finish_reason="other",
+        )
 
 
 def scenario_record(scenario_id: str) -> dict:
@@ -69,6 +80,62 @@ def test_unsupported_compute_dtype_is_rejected() -> None:
         resolve_settings(pilot_config("int8"))
 
 
+def test_dry_run_generation_metadata(tmp_path: Path) -> None:
+    records = generate_templates([scenario_record("scenario_dry_run")])
+    output = tmp_path / "raw" / "outputs.jsonl"
+    result = run_prompt_records(
+        records,
+        DryRunBackend(),
+        output,
+        run_id="dry-run-test",
+        max_new_tokens=8,
+        do_sample=False,
+        limit_pairs=1,
+    )
+
+    row = read_output(output)[0]
+    assert result["generated"] == 1
+    assert row["response_text"] == "[MODEL_RESPONSE_PLACEHOLDER]"
+    assert row["generated_token_count"] == 0
+    assert row["hit_max_new_tokens"] is False
+    assert row["finish_reason"] == "dry_run"
+
+
+def test_generated_response_text_is_preserved_exactly(tmp_path: Path) -> None:
+    exact_response = "[MODEL_RESPONSE_PLACEHOLDER]\n  preserved spacing  "
+
+    class ExactTextBackend:
+        model_id = "exact-text-test-model"
+
+        def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> GenerationResult:
+            del messages, max_new_tokens, do_sample
+            return GenerationResult(exact_response, 4, False, "other")
+
+    records = generate_templates([scenario_record("scenario_exact_text")])
+    output = tmp_path / "raw" / "outputs.jsonl"
+    run_prompt_records(
+        records,
+        ExactTextBackend(),
+        output,
+        run_id="exact-text-test",
+        max_new_tokens=8,
+        do_sample=False,
+        limit_pairs=1,
+    )
+
+    assert read_output(output)[0]["response_text"] == exact_response
+
+
+def test_length_finish_reason_uses_generated_token_ids() -> None:
+    metadata = generation_termination_metadata([10, 11, 12], max_new_tokens=3, eos_token_ids=99)
+    assert metadata == (3, True, "length")
+
+
+def test_eos_finish_reason_uses_generated_token_ids() -> None:
+    metadata = generation_termination_metadata([10, 99], max_new_tokens=3, eos_token_ids=[98, 99])
+    assert metadata == (2, False, "eos")
+
+
 def test_resume_does_not_duplicate_completed_responses(tmp_path: Path) -> None:
     records = generate_templates([scenario_record("scenario_resume")])
     output = tmp_path / "raw" / "outputs.jsonl"
@@ -100,6 +167,41 @@ def test_resume_does_not_duplicate_completed_responses(tmp_path: Path) -> None:
     assert second["resumed"] == 1
     assert len(rows) == 8
     assert len({row["response_id"] for row in rows}) == 8
+
+
+def test_resume_accepts_legacy_records_without_generation_metadata(tmp_path: Path) -> None:
+    records = generate_templates([scenario_record("scenario_legacy")])
+    output = tmp_path / "raw" / "outputs.jsonl"
+    output.parent.mkdir(parents=True)
+    legacy_record = {
+        "response_id": "scenario_legacy::direct::turn_1",
+        "scenario_id": "scenario_legacy",
+        "condition": "direct",
+        "turn_index": 1,
+        "label": "harmful",
+        "model_id": RecordingBackend.model_id,
+        "run_id": "legacy-test",
+        "generation_status": "ok",
+        "response_text": "[MODEL_RESPONSE_PLACEHOLDER]",
+    }
+    output.write_text(json.dumps(legacy_record) + "\n", encoding="utf-8")
+
+    result = run_prompt_records(
+        records,
+        RecordingBackend(),
+        output,
+        run_id="legacy-test",
+        max_new_tokens=8,
+        do_sample=False,
+        resume=True,
+    )
+
+    rows = read_output(output)
+    assert result["resumed"] == 1
+    assert result["generated"] == 7
+    assert len(rows) == 8
+    assert "finish_reason" not in rows[0]
+    assert all("finish_reason" in row for row in rows[1:])
 
 
 def test_context_is_fresh_between_conditions_and_preserved_within_multiturn(tmp_path: Path) -> None:

@@ -74,6 +74,7 @@ def test_configs_load_as_yaml() -> None:
         ROOT / "configs" / "models.yaml",
         ROOT / "configs" / "experiment.yaml",
         ROOT / "configs" / "pilot_qwen.yaml",
+        ROOT / "configs" / "qwen_expanded_pilot.yaml",
     ]
     for path in paths:
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -89,6 +90,20 @@ def test_configs_load_as_yaml() -> None:
     }
     assert pilot["inference"] == {
         "max_new_tokens": 512,
+        "do_sample": False,
+        "seed": 42,
+        "max_multi_turn_length": 3,
+    }
+
+    expanded = yaml.safe_load((ROOT / "configs" / "qwen_expanded_pilot.yaml").read_text(encoding="utf-8"))
+    assert expanded["model"] == {
+        "id": "Qwen/Qwen2.5-7B-Instruct",
+        "load_in_4bit": True,
+        "quantization_type": "nf4",
+        "compute_dtype": "float16",
+    }
+    assert expanded["inference"] == {
+        "max_new_tokens": 1024,
         "do_sample": False,
         "seed": 42,
         "max_multi_turn_length": 3,
