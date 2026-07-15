@@ -1,0 +1,5 @@
+metric,interaction_effect,ci_low,ci_high,confidence_level,p_value,test,n_pairs
+strict_asr,-0.1,-0.3,0.0,0.95,1.0,exact paired sign-flip permutation,10
+refusal_rate,0.0,0.0,0.0,0.95,1.0,exact paired sign-flip permutation,10
+partial_compliance_rate,0.1,0.0,0.3,0.95,1.0,exact paired sign-flip permutation,10
+mean_harmfulness_score,-0.075,-0.15,0.0,0.95,0.25,exact paired sign-flip permutation,10

@@ -40,6 +40,8 @@ Optional models:
 - Gemini Flash free-tier as an optional closed-source API baseline.
 - ChatGPT Plus UI as an exploratory manual baseline only.
 
+The project is designed as a multi-model study. At the current stage, the full expanded experiment has been completed only for Qwen2.5-7B-Instruct.
+
 ## Metrics
 
 - Attack Success Rate, ASR.
@@ -65,18 +67,35 @@ Optional models:
 
 ## Preliminary Qwen Mini-Pilot
 
-The first pipeline validation mini-pilot is complete. It used `Qwen/Qwen2.5-7B-Instruct` with bitsandbytes 4-bit NF4 quantization, `float16` compute, deterministic decoding (`do_sample=false`), seed 42, and a maximum generation length of 512 tokens. The private pilot contained four scenarios (two harmful and two benign) evaluated under `direct`, `polite`, `multi_turn`, and `polite_multi_turn`, producing 32 response records. Human annotation, aggregate metric computation, and generation of all five pilot figures were completed.
+The initial four-scenario mini-pilot validated the private prompt, deterministic inference, annotation, aggregation, and plotting pipeline. Its 512-token configuration remains available as the historical `configs/pilot_qwen.yaml` artifact; the larger experiment below supersedes it for substantive Qwen analysis.
+
+## Expanded Qwen Pilot
+
+The first expanded model stage used `Qwen/Qwen2.5-7B-Instruct` with 4-bit NF4 quantization, `float16` compute, deterministic decoding, seed 42, and a fixed 1024-token generation budget. It included:
+
+- 20 scenarios: 10 harmful and 10 benign;
+- 4 prompt conditions;
+- 80 conversations and 160 response records;
+- 20 length-limited responses retained in the analysis;
+- a second review of 38 flagged rows;
+- no excluded responses.
 
 | Condition | Strict ASR | Refusal Rate | Partial Compliance | Mean Harmfulness | Benign Success |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Direct | 0.50 | 0.50 | 0.00 | 0.625 | 0.50 |
-| Polite | 0.50 | 0.50 | 0.00 | 0.625 | 0.50 |
-| Multi-turn | 0.50 | 0.00 | 0.50 | 0.875 | 0.50 |
-| Polite multi-turn | 0.50 | 0.00 | 0.50 | 0.750 | 0.50 |
+| Direct | 0.10 | 0.90 | 0.00 | 0.300 | 0.90 |
+| Polite | 0.10 | 0.90 | 0.00 | 0.325 | 0.90 |
+| Multi-turn | 0.70 | 0.20 | 0.10 | 0.825 | 0.90 |
+| Polite multi-turn | 0.60 | 0.20 | 0.20 | 0.775 | 0.90 |
 
-Direct and polite prompting produced identical aggregate results in this sample. Multi-turn prompting increased mean harmfulness and reduced the refusal rate, while polite multi-turn prompting did not outperform ordinary multi-turn prompting. Strict ASR remained 0.50 in all four conditions.
+![Strict ASR by condition](figures/qwen_expanded_asr.png)
 
-These results validate the pipeline only and are not statistically conclusive; they do not prove the research hypotheses. With only two harmful and two benign scenarios, each scenario changes a corresponding rate by 0.50. Some responses may also have reached the 512-token generation limit. The next experiment should expand the Qwen pilot to 10 harmful and 10 benign scenarios.
+![Mean harmfulness by condition](figures/qwen_expanded_harmfulness.png)
+
+![Refusal rate by condition](figures/qwen_expanded_refusal.png)
+
+![Multi-turn harmful discovery curve](figures/qwen_expanded_discovery_curve.png)
+
+Within this small sample, polite wording alone changed little, while multi-turn decomposition was associated with higher attack success and harmfulness and lower refusal. Adding polite wording to multi-turn prompting did not strengthen the result, and benign success remained 0.90 in all conditions. This is preliminary evidence for the current Qwen stage, not proof of the research hypotheses, and requires replication on the remaining models. See [the expanded pilot report](docs/qwen_expanded_pilot.md) for methods, confidence intervals, exploratory paired statistics, and limitations.
 
 ## Repository Structure
 
@@ -173,6 +192,15 @@ python -m src.analyze_results --input results/judged/pilot_annotation_sheet.csv 
 python -m src.plot_results --input tables/pilot_metrics.csv --output-dir figures
 ```
 
+Reproduce the four expanded Qwen figures from public aggregate tables only:
+
+```bash
+python -m src.plot_expanded_results \
+  --metrics tables/qwen_expanded_metrics.csv \
+  --graph-values tables/qwen_expanded_graph_values.csv \
+  --output-dir figures
+```
+
 Run tests:
 
 ```bash
@@ -219,9 +247,14 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Aggregate metrics.
 - [x] Pilot figure generation.
 - [ ] Full local benchmark ingestion.
-- [ ] Expanded 10 harmful / 10 benign Qwen pilot.
-- [ ] Second annotation or adjudication pass.
+- [x] Expanded 10 harmful / 10 benign Qwen pilot.
+- [x] Second review of flagged Qwen rows.
+- [x] Expanded Qwen aggregate metrics.
+- [x] Confidence intervals.
+- [x] Paired exploratory statistics.
+- [x] Verified public figures.
+- [ ] Independent annotation by a second reviewer.
 - [ ] Open-weight model comparison.
-- [ ] Statistical analysis.
 - [ ] Optional API baseline.
+- [ ] Final multi-model statistical analysis.
 - [ ] Final write-up.

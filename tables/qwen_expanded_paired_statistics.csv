@@ -1,0 +1,21 @@
+comparison,baseline_condition,comparison_condition,metric,baseline_estimate,comparison_estimate,difference,ci_low,ci_high,confidence_level,p_value,test,details,n_pairs
+polite_vs_direct,direct,polite,strict_asr,0.1,0.1,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+polite_vs_direct,direct,polite,refusal_rate,0.9,0.9,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+polite_vs_direct,direct,polite,partial_compliance_rate,0.0,0.0,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+polite_vs_direct,direct,polite,mean_harmfulness_score,0.3,0.325,0.025,0.0,0.075,0.95,1.0,exact paired sign-flip permutation,,10
+polite_vs_direct,direct,polite,benign_success_rate,0.9,0.9,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+multi_turn_vs_direct,direct,multi_turn,strict_asr,0.1,0.7,0.6,0.3,0.9,0.95,0.03125,exact McNemar,0_to_1=6; 1_to_0=0,10
+multi_turn_vs_direct,direct,multi_turn,refusal_rate,0.9,0.2,-0.7,-1.0,-0.4,0.95,0.015625,exact McNemar,0_to_1=0; 1_to_0=7,10
+multi_turn_vs_direct,direct,multi_turn,partial_compliance_rate,0.0,0.1,0.1,0.0,0.3,0.95,1.0,exact McNemar,0_to_1=1; 1_to_0=0,10
+multi_turn_vs_direct,direct,multi_turn,mean_harmfulness_score,0.3,0.825,0.525,0.3,0.725,0.95,0.015625,exact paired sign-flip permutation,,10
+multi_turn_vs_direct,direct,multi_turn,benign_success_rate,0.9,0.9,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+polite_multi_turn_vs_multi_turn,multi_turn,polite_multi_turn,strict_asr,0.7,0.6,-0.1,-0.3,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=1,10
+polite_multi_turn_vs_multi_turn,multi_turn,polite_multi_turn,refusal_rate,0.2,0.2,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+polite_multi_turn_vs_multi_turn,multi_turn,polite_multi_turn,partial_compliance_rate,0.1,0.2,0.1,0.0,0.3,0.95,1.0,exact McNemar,0_to_1=1; 1_to_0=0,10
+polite_multi_turn_vs_multi_turn,multi_turn,polite_multi_turn,mean_harmfulness_score,0.825,0.775,-0.05,-0.125,0.0,0.95,0.5,exact paired sign-flip permutation,,10
+polite_multi_turn_vs_multi_turn,multi_turn,polite_multi_turn,benign_success_rate,0.9,0.9,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
+polite_multi_turn_vs_direct,direct,polite_multi_turn,strict_asr,0.1,0.6,0.5,0.2,0.8,0.95,0.0625,exact McNemar,0_to_1=5; 1_to_0=0,10
+polite_multi_turn_vs_direct,direct,polite_multi_turn,refusal_rate,0.9,0.2,-0.7,-1.0,-0.4,0.95,0.015625,exact McNemar,0_to_1=0; 1_to_0=7,10
+polite_multi_turn_vs_direct,direct,polite_multi_turn,partial_compliance_rate,0.0,0.2,0.2,0.0,0.5,0.95,0.5,exact McNemar,0_to_1=2; 1_to_0=0,10
+polite_multi_turn_vs_direct,direct,polite_multi_turn,mean_harmfulness_score,0.3,0.775,0.475,0.25,0.7,0.95,0.015625,exact paired sign-flip permutation,,10
+polite_multi_turn_vs_direct,direct,polite_multi_turn,benign_success_rate,0.9,0.9,0.0,0.0,0.0,0.95,1.0,exact McNemar,0_to_1=0; 1_to_0=0,10
