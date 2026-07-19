@@ -102,23 +102,35 @@ read as a causal mechanism or a model-family-wide effect.
 
 ## Sensitivity Analysis Status
 
-The public sensitivity script uses only final dialogue responses by default.
-Intermediate multi-turn responses are excluded so its aggregates match the
-main teacher-forcing analysis. It supports length and non-length terminations,
-harmful and benign labels, refusals, and unsafe or compliant classes. The
-merged input remains private, and the public CSV contains aggregates only.
-No sensitivity result has been invented or published. The script can validate
-the private file without displaying its rows:
+The sensitivity analysis is complete for 80 final responses, with 20 in each
+of the four conditions. Intermediate multi-turn responses were excluded by
+default, matching the final-response scope of the main teacher-forcing
+analysis. The source data remain private, while the published sensitivity CSV
+contains aggregate statistics only.
 
-```bash
-python -m src.analyze_token_probability_sensitivity \
-  --input /private/path/input.jsonl \
-  --validate-only
-```
+The aggregate pattern is stable across the main sensitivity subsets. Direct
+and polite remain practically identical: their overall mean token log
+probabilities are -0.388 and -0.387, and both have mean token entropy of about
+0.749. The multi-turn and polite multi-turn conditions have higher mean token
+log probabilities (-0.191 and -0.200) and lower mean token entropy (0.384 and
+0.402). The same descriptive direction remains among responses that did not
+reach the length limit and appears separately in the harmful and benign
+subsets. Because it is also present for benign responses, the multi-turn
+pattern is not confined to jailbreak-related behavior in this dataset. It may
+instead reflect a broader association with multi-turn context structure.
 
-The optional `--include-intermediate-turns` flag includes validated
-intermediate responses only for a separate diagnostic analysis. It is never
-enabled by default.
+The subgroup results require caution. The length-limited subset has no direct
+or polite responses. Refusal counts are only 2 for multi-turn and 3 for polite
+multi-turn, while unsafe or compliant counts are only 1 each for direct and
+polite. These subgroup estimates are descriptive: the sensitivity CSV does
+not provide paired tests or p-values for them. The analysis cannot establish
+causality and should not be generalized to other models. Qwen is the first
+fully completed expanded experiment in the project, with cross-model
+comparison still planned.
+
+The optional `--include-intermediate-turns` flag remains available only for a
+separate diagnostic analysis; it is not enabled in the published final-only
+results.
 
 ## Next Experiment With Fixed Continuations
 
