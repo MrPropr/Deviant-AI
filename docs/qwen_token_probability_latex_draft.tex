@@ -1,0 +1,71 @@
+% Standalone public-safe draft section. No private text or identifiers.
+\subsection{Teacher-forced token-probability analysis}
+
+We evaluated the expanded Qwen2.5-7B-Instruct run using 20 paired
+scenarios (10 harmful and 10 benign). For each comparison, Table~\ref{tab:qwen-token-probability}
+reports the right-condition minus left-condition mean difference and a paired
+bootstrap 95\% confidence interval. Two-sided sign-flip permutation and
+Wilcoxon tests were used as complementary checks. These teacher-forced scores
+describe the probability of the observed continuation under its context; they
+do not directly measure an internal mental state or establish a causal
+mechanism.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Paired Qwen token-probability differences ($n=20$). A dagger marks
+effects supported by both paired tests at the unadjusted 0.05 level.}
+\label{tab:qwen-token-probability}
+\begin{tabular}{lrrr}
+\hline
+Metric & Polite $-$ direct & Multi-turn $-$ direct & Polite MT $-$ MT \\
+\hline
+Mean token log probability
+  & $0.001$ [$-0.021$, $0.025$]
+  & $0.197$ [$0.150$, $0.241$]$^{\dagger}$
+  & $-0.009$ [$-0.039$, $0.025$] \\
+Geometric mean probability
+  & $-0.000$ [$-0.015$, $0.016$]
+  & $0.150$ [$0.113$, $0.185$]$^{\dagger}$
+  & $-0.007$ [$-0.032$, $0.019$] \\
+Perplexity
+  & $-0.002$ [$-0.037$, $0.029$]
+  & $-0.260$ [$-0.315$, $-0.198$]$^{\dagger}$
+  & $0.011$ [$-0.031$, $0.049$] \\
+First-8-token log probability
+  & $0.022$ [$-0.040$, $0.082$]
+  & $0.072$ [$-0.038$, $0.205$]
+  & $0.008$ [$-0.054$, $0.071$] \\
+First-16-token log probability
+  & $0.025$ [$-0.021$, $0.076$]
+  & $0.119$ [$0.053$, $0.188$]$^{\dagger}$
+  & $0.004$ [$-0.041$, $0.048$] \\
+Mean token entropy
+  & $0.000$ [$-0.044$, $0.039$]
+  & $-0.365$ [$-0.449$, $-0.271$]$^{\dagger}$
+  & $0.018$ [$-0.049$, $0.077$] \\
+Top-1 versus top-2 margin
+  & $-0.000$ [$-0.016$, $0.016$]
+  & $0.167$ [$0.128$, $0.205$]$^{\dagger}$
+  & $-0.006$ [$-0.034$, $0.025$] \\
+\hline
+\end{tabular}
+\end{table}
+
+Polite and direct phrasing produced near-zero paired differences with
+confidence intervals crossing zero. Multi-turn context produced higher mean
+token probability, lower perplexity and entropy, and a larger top-1 versus
+top-2 margin. Both paired tests supported all of these multi-turn effects
+except the first-8-token result; the first-16-token effect was supported by
+both tests. Adding politeness to multi-turn prompts did not produce a reliable
+incremental difference.
+
+The multi-turn findings are consistent with a more concentrated predictive
+distribution for the observed continuations, not proof of increased internal
+confidence. Interpretation is limited by one model, 20 pairs, related outcomes,
+and possible context, continuation-length, and termination differences. The 20
+length-limited response records were retained under the fixed 1024-token
+budget rather than excluded. A private-input sensitivity pipeline is ready,
+but no sensitivity table is published because its required merged input is not
+available in the public repository. A follow-up should score identical fixed,
+sanitized continuations across conditions.
