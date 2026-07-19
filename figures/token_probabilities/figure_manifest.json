@@ -1,0 +1,316 @@
+{
+  "condition_order": [
+    "direct",
+    "polite",
+    "multi_turn",
+    "polite_multi_turn"
+  ],
+  "created_by_script_version": "1.0.0",
+  "figures": [
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_mean_token_logprob.png",
+      "height": 1440,
+      "metric": "mean_token_logprob",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": -0.3622192898,
+          "ci_low": -0.4126006478,
+          "condition": "direct",
+          "mean": -0.387608623,
+          "n": 20
+        },
+        {
+          "ci_high": -0.3688236694,
+          "ci_low": -0.4052136354,
+          "condition": "polite",
+          "mean": -0.3868649332,
+          "n": 20
+        },
+        {
+          "ci_high": -0.1494076487,
+          "ci_low": -0.234649448,
+          "condition": "multi_turn",
+          "mean": -0.190668247,
+          "n": 20
+        },
+        {
+          "ci_high": -0.1575093528,
+          "ci_low": -0.2419045172,
+          "condition": "polite_multi_turn",
+          "mean": -0.1996778966,
+          "n": 20
+        }
+      ],
+      "sha256": "c210a74a609e45f5a07eb995337e2c9a73746a183dfcdae5904f02ff86d0d631",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_geometric_mean_probability.png",
+      "height": 1440,
+      "metric": "geometric_mean_token_probability",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": 0.6978765865,
+          "ci_low": 0.6631058574,
+          "condition": "direct",
+          "mean": 0.6798179471,
+          "n": 20
+        },
+        {
+          "ci_high": 0.6922286613,
+          "ci_low": 0.6673397891,
+          "condition": "polite",
+          "mean": 0.6797683848,
+          "n": 20
+        },
+        {
+          "ci_high": 0.8640015156,
+          "ci_low": 0.7963213698,
+          "condition": "multi_turn",
+          "mean": 0.8301576581,
+          "n": 20
+        },
+        {
+          "ci_high": 0.8584997998,
+          "ci_low": 0.7885408663,
+          "condition": "polite_multi_turn",
+          "mean": 0.8227687173,
+          "n": 20
+        }
+      ],
+      "sha256": "4a0b63674ae625343269a2f7a6491ebdd21de62e66f66a9faa893143ac95a8db",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_first16_logprob.png",
+      "height": 1440,
+      "metric": "mean_first_16_token_logprob",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": -0.2524855763,
+          "ci_low": -0.3618153702,
+          "condition": "direct",
+          "mean": -0.3067461736,
+          "n": 20
+        },
+        {
+          "ci_high": -0.2334312495,
+          "ci_low": -0.3325961737,
+          "condition": "polite",
+          "mean": -0.2821177113,
+          "n": 20
+        },
+        {
+          "ci_high": -0.1408345535,
+          "ci_low": -0.2338028035,
+          "condition": "multi_turn",
+          "mean": -0.1872512072,
+          "n": 20
+        },
+        {
+          "ci_high": -0.132321174,
+          "ci_low": -0.2339888528,
+          "condition": "polite_multi_turn",
+          "mean": -0.1830366493,
+          "n": 20
+        }
+      ],
+      "sha256": "ad4c24a72a5b305689b86de88cb17bf04df0c6b873020744d0d0a0dbcb0bd617",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_entropy.png",
+      "height": 1440,
+      "metric": "mean_token_entropy",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": 0.8004660911,
+          "ci_low": 0.6972907051,
+          "condition": "direct",
+          "mean": 0.748811158,
+          "n": 20
+        },
+        {
+          "ci_high": 0.7904347343,
+          "ci_low": 0.7120340907,
+          "condition": "polite",
+          "mean": 0.7492771761,
+          "n": 20
+        },
+        {
+          "ci_high": 0.4731115254,
+          "ci_low": 0.2984696643,
+          "condition": "multi_turn",
+          "mean": 0.3836003754,
+          "n": 20
+        },
+        {
+          "ci_high": 0.4857267204,
+          "ci_low": 0.3199718609,
+          "condition": "polite_multi_turn",
+          "mean": 0.4019334118,
+          "n": 20
+        }
+      ],
+      "sha256": "cb34157b3286cca4887b091be29afae5a4b97a1c27838f87baa2a15e4c2d2bb1",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [
+        "polite_minus_direct"
+      ],
+      "conditions": [
+        "direct",
+        "polite"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_polite_direct_paired.png",
+      "height": 1440,
+      "metric": "delta_mean_token_logprob",
+      "n_pairs": 20,
+      "plotted_values": {
+        "label_counts": {
+          "benign": 10,
+          "harmful": 10
+        },
+        "mean_difference": 0.0007436898300000009
+      },
+      "sha256": "735010114a2afb6959115d7ff97d785669e57786f909cfed835cf3751fb678dd",
+      "source_tables": [
+        "private_pair_input"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [
+        "polite_minus_direct",
+        "multi_turn_minus_direct",
+        "polite_multi_turn_minus_multi_turn"
+      ],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_harmfulness_delta_scatter.png",
+      "height": 1440,
+      "metric": "delta_mean_token_logprob",
+      "n_pairs": 30,
+      "plotted_values": [
+        {
+          "comparison": "polite_minus_direct",
+          "mean_harmfulness_difference": 0.025,
+          "mean_token_logprob_difference": 0.018136376069999998,
+          "n_pairs": 10
+        },
+        {
+          "comparison": "multi_turn_minus_direct",
+          "mean_harmfulness_difference": 0.475,
+          "mean_token_logprob_difference": 0.17808853974,
+          "n_pairs": 10
+        },
+        {
+          "comparison": "polite_multi_turn_minus_multi_turn",
+          "mean_harmfulness_difference": -0.025,
+          "mean_token_logprob_difference": 0.007558987839999998,
+          "n_pairs": 10
+        }
+      ],
+      "sha256": "f1acff9045e91e26a7e72bb5548d0b8c998cdc28c639eedefbda85edafa7cc9d",
+      "source_tables": [
+        "private_pair_input"
+      ],
+      "subset": "harmful",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    }
+  ],
+  "missing_safe_artifacts": [],
+  "status": "PASS"
+}
