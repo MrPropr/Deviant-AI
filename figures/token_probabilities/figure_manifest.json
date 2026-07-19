@@ -56,7 +56,7 @@
           "n": 20
         }
       ],
-      "sha256": "efff29a15db744df3a85d2fde80f3b152c85e915d95ddf16239fba9c09790d52",
+      "sha256": "c210a74a609e45f5a07eb995337e2c9a73746a183dfcdae5904f02ff86d0d631",
       "source_tables": [
         "qwen_token_probability_summary.csv"
       ],
@@ -113,7 +113,7 @@
           "n": 20
         }
       ],
-      "sha256": "0561cabb14219338c85b7dd0177f4834d280f063dce5788019bcded52e0355dc",
+      "sha256": "4a0b63674ae625343269a2f7a6491ebdd21de62e66f66a9faa893143ac95a8db",
       "source_tables": [
         "qwen_token_probability_summary.csv"
       ],
@@ -170,7 +170,7 @@
           "n": 20
         }
       ],
-      "sha256": "d29ea93ca0b23ff6f21725339c6722e6f9542b9acd5caf21e48ea08c788e744e",
+      "sha256": "ad4c24a72a5b305689b86de88cb17bf04df0c6b873020744d0d0a0dbcb0bd617",
       "source_tables": [
         "qwen_token_probability_summary.csv"
       ],
@@ -227,18 +227,90 @@
           "n": 20
         }
       ],
-      "sha256": "868feda42267e2724a7d0a1b158ea7c95f2bc4f102ebe791c020d2e5bb243dda",
+      "sha256": "cb34157b3286cca4887b091be29afae5a4b97a1c27838f87baa2a15e4c2d2bb1",
       "source_tables": [
         "qwen_token_probability_summary.csv"
       ],
       "subset": "all",
       "verification_status": "generated_and_technically_verified",
       "width": 2160
+    },
+    {
+      "comparisons": [
+        "polite_minus_direct"
+      ],
+      "conditions": [
+        "direct",
+        "polite"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_polite_direct_paired.png",
+      "height": 1440,
+      "metric": "delta_mean_token_logprob",
+      "n_pairs": 20,
+      "plotted_values": {
+        "label_counts": {
+          "benign": 10,
+          "harmful": 10
+        },
+        "mean_difference": 0.0007436898300000009
+      },
+      "sha256": "735010114a2afb6959115d7ff97d785669e57786f909cfed835cf3751fb678dd",
+      "source_tables": [
+        "private_pair_input"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [
+        "polite_minus_direct",
+        "multi_turn_minus_direct",
+        "polite_multi_turn_minus_multi_turn"
+      ],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_harmfulness_delta_scatter.png",
+      "height": 1440,
+      "metric": "delta_mean_token_logprob",
+      "n_pairs": 30,
+      "plotted_values": [
+        {
+          "comparison": "polite_minus_direct",
+          "mean_harmfulness_difference": 0.025,
+          "mean_token_logprob_difference": 0.018136376069999998,
+          "n_pairs": 10
+        },
+        {
+          "comparison": "multi_turn_minus_direct",
+          "mean_harmfulness_difference": 0.475,
+          "mean_token_logprob_difference": 0.17808853974,
+          "n_pairs": 10
+        },
+        {
+          "comparison": "polite_multi_turn_minus_multi_turn",
+          "mean_harmfulness_difference": -0.025,
+          "mean_token_logprob_difference": 0.007558987839999998,
+          "n_pairs": 10
+        }
+      ],
+      "sha256": "f1acff9045e91e26a7e72bb5548d0b8c998cdc28c639eedefbda85edafa7cc9d",
+      "source_tables": [
+        "private_pair_input"
+      ],
+      "subset": "harmful",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
     }
   ],
-  "missing_safe_artifacts": [
-    "qwen_polite_direct_paired.png",
-    "qwen_harmfulness_delta_scatter.png"
-  ],
-  "status": "BLOCKED_PRIVATE_INPUT"
+  "missing_safe_artifacts": [],
+  "status": "PASS"
 }
