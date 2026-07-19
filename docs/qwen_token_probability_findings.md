@@ -102,17 +102,23 @@ read as a causal mechanism or a model-family-wide effect.
 
 ## Sensitivity Analysis Status
 
-The public sensitivity script supports all responses, length and non-length
-terminations, harmful and benign labels, refusals, and unsafe or compliant
-classes. The required private merged input is not available in the public
-repository, so no sensitivity result has been invented or published. The
-script can validate the private file without displaying its rows:
+The public sensitivity script uses only final dialogue responses by default.
+Intermediate multi-turn responses are excluded so its aggregates match the
+main teacher-forcing analysis. It supports length and non-length terminations,
+harmful and benign labels, refusals, and unsafe or compliant classes. The
+merged input remains private, and the public CSV contains aggregates only.
+No sensitivity result has been invented or published. The script can validate
+the private file without displaying its rows:
 
 ```bash
 python -m src.analyze_token_probability_sensitivity \
   --input /private/path/input.jsonl \
   --validate-only
 ```
+
+The optional `--include-intermediate-turns` flag includes validated
+intermediate responses only for a separate diagnostic analysis. It is never
+enabled by default.
 
 ## Next Experiment With Fixed Continuations
 

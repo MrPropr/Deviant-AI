@@ -44,6 +44,7 @@ OUTPUT_FIELDS = (
 
 REQUIRED_FIELDS = {
     "condition",
+    "is_final_turn",
     "label",
     "response_class",
     "finish_reason",
@@ -114,6 +115,11 @@ def validate_rows(rows: list[dict]) -> list[dict]:
                 f"record {row_number}: invalid finish reason"
             )
 
+        if type(row["is_final_turn"]) is not bool:
+            errors.append(
+                f"record {row_number}: invalid final-turn flag"
+            )
+
         if not isinstance(row["response_class"], str) or not row[
             "response_class"
         ].strip():
@@ -143,6 +149,20 @@ def validate_rows(rows: list[dict]) -> list[dict]:
         )
 
     return validated
+
+
+def select_analysis_rows(
+    rows: list[dict],
+    include_intermediate_turns: bool = False,
+) -> list[dict]:
+    if include_intermediate_turns:
+        return list(rows)
+
+    return [
+        row
+        for row in rows
+        if row["is_final_turn"] is True
+    ]
 
 
 def select_subset(rows: list[dict], subset: str) -> list[dict]:
@@ -191,11 +211,16 @@ def build_sensitivity_rows(
     rows: list[dict],
     bootstrap_iterations: int,
     base_seed: int,
+    include_intermediate_turns: bool = False,
 ) -> list[dict]:
     output: list[dict] = []
+    analysis_rows = select_analysis_rows(
+        rows,
+        include_intermediate_turns=include_intermediate_turns,
+    )
 
     for subset in SUBSETS:
-        selected = select_subset(rows, subset)
+        selected = select_subset(analysis_rows, subset)
 
         for condition in CONDITIONS:
             condition_rows = [
@@ -268,6 +293,14 @@ def parse_args(
         action="store_true",
     )
     parser.add_argument(
+        "--include-intermediate-turns",
+        action="store_true",
+        help=(
+            "Include validated intermediate turns for diagnostic "
+            "analysis. The default is final turns only."
+        ),
+    )
+    parser.add_argument(
         "--bootstrap-iterations",
         type=int,
         default=10000,
@@ -292,25 +325,43 @@ def run(args: argparse.Namespace) -> int:
         )
 
     rows = validate_rows(read_jsonl(args.input))
+    final_rows = select_analysis_rows(rows)
 
     if args.validate_only:
         print(f"Validation passed for {len(rows)} records.")
+        print(f"Final records: {len(final_rows)}.")
         return len(rows)
+
+    analysis_rows = select_analysis_rows(
+        rows,
+        include_intermediate_turns=(
+            args.include_intermediate_turns
+        ),
+    )
+
+    if not analysis_rows:
+        raise ValueError(
+            "Input contains no records selected for analysis."
+        )
 
     summary_rows = build_sensitivity_rows(
         rows=rows,
         bootstrap_iterations=args.bootstrap_iterations,
         base_seed=args.seed,
+        include_intermediate_turns=(
+            args.include_intermediate_turns
+        ),
     )
     write_csv(
         Path(args.output),
         summary_rows,
         list(OUTPUT_FIELDS),
     )
-    print(
-        "Sensitivity analysis complete: "
-        f"{len(summary_rows)} aggregate rows written."
-    )
+    print("Sensitivity analysis complete.")
+    print(f"Input records: {len(rows)}.")
+    print(f"Final records used: {len(final_rows)}.")
+    print(f"Records used: {len(analysis_rows)}.")
+    print(f"Aggregate rows written: {len(summary_rows)}.")
     return len(summary_rows)
 
 

@@ -28,9 +28,11 @@ def make_row(
     response_class: str,
     finish_reason: str,
     value: float,
+    is_final_turn: bool = True,
 ) -> dict:
     row = {
         "condition": condition,
+        "is_final_turn": is_final_turn,
         "label": label,
         "response_class": response_class,
         "finish_reason": finish_reason,
@@ -46,6 +48,71 @@ def write_input(path, rows: list[dict]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row) + "\n")
+
+
+def make_multiturn_fixture() -> list[dict]:
+    return [
+        make_row(
+            "direct",
+            "harmful",
+            "refusal",
+            "eos",
+            1.0,
+        ),
+        make_row(
+            "polite",
+            "benign",
+            "compliant",
+            "eos",
+            2.0,
+        ),
+        make_row(
+            "multi_turn",
+            "harmful",
+            "refusal",
+            "eos",
+            100.0,
+            is_final_turn=False,
+        ),
+        make_row(
+            "multi_turn",
+            "harmful",
+            "refusal",
+            "eos",
+            200.0,
+            is_final_turn=False,
+        ),
+        make_row(
+            "multi_turn",
+            "harmful",
+            "unsafe",
+            "length",
+            3.0,
+        ),
+        make_row(
+            "polite_multi_turn",
+            "benign",
+            "compliant",
+            "eos",
+            300.0,
+            is_final_turn=False,
+        ),
+        make_row(
+            "polite_multi_turn",
+            "benign",
+            "compliant",
+            "eos",
+            400.0,
+            is_final_turn=False,
+        ),
+        make_row(
+            "polite_multi_turn",
+            "benign",
+            "compliant",
+            "eos",
+            4.0,
+        ),
+    ]
 
 
 def test_builds_every_public_subset_and_metric() -> None:
@@ -127,20 +194,15 @@ def test_single_value_statistics_are_deterministic() -> None:
     assert selected["ci_high"] == 2.5
 
 
-def test_run_writes_only_the_public_schema(tmp_path) -> None:
+def test_run_writes_only_the_public_schema(
+    tmp_path,
+    capsys,
+) -> None:
     input_path = tmp_path / "synthetic.jsonl"
     output_path = tmp_path / "summary.csv"
     write_input(
         input_path,
-        [
-            make_row(
-                condition="polite",
-                label="benign",
-                response_class="compliant",
-                finish_reason="eos",
-                value=1.0,
-            )
-        ],
+        make_multiturn_fixture(),
     )
 
     args = parse_args(
@@ -165,9 +227,88 @@ def test_run_writes_only_the_public_schema(tmp_path) -> None:
     ) as handle:
         reader = csv.DictReader(handle)
         assert tuple(reader.fieldnames or ()) == OUTPUT_FIELDS
-        assert len(list(reader)) == (
+        rows = list(reader)
+        assert len(rows) == (
             len(SUBSETS) * len(CONDITIONS) * len(METRICS)
         )
+
+    selected = next(
+        row
+        for row in rows
+        if (
+            row["subset"] == "all"
+            and row["condition"] == "multi_turn"
+            and row["metric"] == METRICS[0]
+        )
+    )
+    assert selected["n"] == "1"
+    assert selected["mean"] == "3.0000000000"
+
+    console = capsys.readouterr().out
+    assert "Input records: 8." in console
+    assert "Final records used: 4." in console
+    assert "Records used: 4." in console
+    assert "Aggregate rows written: 224." in console
+
+
+def test_default_analysis_uses_only_final_turns() -> None:
+    output = build_sensitivity_rows(
+        validate_rows(make_multiturn_fixture()),
+        bootstrap_iterations=100,
+        base_seed=42,
+    )
+
+    all_rows = {
+        row["condition"]: row
+        for row in output
+        if (
+            row["subset"] == "all"
+            and row["metric"] == METRICS[0]
+        )
+    }
+
+    assert {
+        condition: row["n"]
+        for condition, row in all_rows.items()
+    } == {
+        condition: 1
+        for condition in CONDITIONS
+    }
+    assert all_rows["direct"]["mean"] == 1.0
+    assert all_rows["polite"]["mean"] == 2.0
+    assert all_rows["multi_turn"]["mean"] == 3.0
+    assert all_rows["polite_multi_turn"]["mean"] == 4.0
+    assert all_rows["multi_turn"]["ci_low"] == 3.0
+    assert all_rows["multi_turn"]["ci_high"] == 3.0
+    assert all_rows["polite_multi_turn"]["ci_low"] == 4.0
+    assert all_rows["polite_multi_turn"]["ci_high"] == 4.0
+
+
+def test_include_intermediate_turns_is_explicit() -> None:
+    output = build_sensitivity_rows(
+        validate_rows(make_multiturn_fixture()),
+        bootstrap_iterations=100,
+        base_seed=42,
+        include_intermediate_turns=True,
+    )
+
+    all_rows = {
+        row["condition"]: row
+        for row in output
+        if (
+            row["subset"] == "all"
+            and row["metric"] == METRICS[0]
+        )
+    }
+
+    assert all_rows["direct"]["n"] == 1
+    assert all_rows["polite"]["n"] == 1
+    assert all_rows["multi_turn"]["n"] == 3
+    assert all_rows["polite_multi_turn"]["n"] == 3
+    assert all_rows["multi_turn"]["mean"] == 101.0
+    assert all_rows["polite_multi_turn"]["mean"] == pytest.approx(
+        704.0 / 3.0
+    )
 
 
 def test_validate_only_does_not_create_output(
@@ -178,15 +319,7 @@ def test_validate_only_does_not_create_output(
     output_path = tmp_path / "unused.csv"
     write_input(
         input_path,
-        [
-            make_row(
-                condition="multi_turn",
-                label="harmful",
-                response_class="refusal",
-                finish_reason="other",
-                value=-1.0,
-            )
-        ],
+        make_multiturn_fixture(),
     )
 
     args = parse_args(
@@ -199,9 +332,99 @@ def test_validate_only_does_not_create_output(
         ]
     )
 
-    assert run(args) == 1
+    assert run(args) == 8
     assert not output_path.exists()
-    assert "Validation passed for 1 records." in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "Validation passed for 8 records." in output
+    assert "Final records: 4." in output
+
+
+def test_missing_final_turn_flag_is_rejected() -> None:
+    row = make_multiturn_fixture()[0]
+    del row["is_final_turn"]
+
+    with pytest.raises(ValueError, match="missing required fields"):
+        validate_rows([row])
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    ["true", "false", 0, 1, "", None],
+)
+def test_non_boolean_final_turn_flag_is_rejected(
+    invalid_value,
+) -> None:
+    row = make_multiturn_fixture()[0]
+    row["is_final_turn"] = invalid_value
+
+    with pytest.raises(ValueError, match="invalid final-turn flag"):
+        validate_rows([row])
+
+
+def test_cli_include_intermediate_turns(tmp_path) -> None:
+    input_path = tmp_path / "synthetic.jsonl"
+    output_path = tmp_path / "summary.csv"
+    write_input(input_path, make_multiturn_fixture())
+
+    args = parse_args(
+        [
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--include-intermediate-turns",
+            "--bootstrap-iterations",
+            "100",
+        ]
+    )
+    run(args)
+
+    with output_path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+
+    selected = next(
+        row
+        for row in rows
+        if (
+            row["subset"] == "all"
+            and row["condition"] == "multi_turn"
+            and row["metric"] == METRICS[0]
+        )
+    )
+    assert selected["n"] == "3"
+
+
+def test_bootstrap_is_reproducible_for_same_seed() -> None:
+    rows = validate_rows(
+        make_multiturn_fixture()
+        + [
+            make_row(
+                condition=condition,
+                label="benign",
+                response_class="compliant",
+                finish_reason="eos",
+                value=float(index + 10),
+            )
+            for index, condition in enumerate(CONDITIONS)
+        ]
+    )
+
+    first = build_sensitivity_rows(
+        rows,
+        bootstrap_iterations=200,
+        base_seed=42,
+    )
+    second = build_sensitivity_rows(
+        rows,
+        bootstrap_iterations=200,
+        base_seed=42,
+    )
+
+    assert first == second
 
 
 def test_validation_rejects_non_public_fields_without_echoing_data() -> None:
