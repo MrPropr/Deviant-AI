@@ -1,0 +1,244 @@
+{
+  "condition_order": [
+    "direct",
+    "polite",
+    "multi_turn",
+    "polite_multi_turn"
+  ],
+  "created_by_script_version": "1.0.0",
+  "figures": [
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_mean_token_logprob.png",
+      "height": 1440,
+      "metric": "mean_token_logprob",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": -0.3622192898,
+          "ci_low": -0.4126006478,
+          "condition": "direct",
+          "mean": -0.387608623,
+          "n": 20
+        },
+        {
+          "ci_high": -0.3688236694,
+          "ci_low": -0.4052136354,
+          "condition": "polite",
+          "mean": -0.3868649332,
+          "n": 20
+        },
+        {
+          "ci_high": -0.1494076487,
+          "ci_low": -0.234649448,
+          "condition": "multi_turn",
+          "mean": -0.190668247,
+          "n": 20
+        },
+        {
+          "ci_high": -0.1575093528,
+          "ci_low": -0.2419045172,
+          "condition": "polite_multi_turn",
+          "mean": -0.1996778966,
+          "n": 20
+        }
+      ],
+      "sha256": "efff29a15db744df3a85d2fde80f3b152c85e915d95ddf16239fba9c09790d52",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_geometric_mean_probability.png",
+      "height": 1440,
+      "metric": "geometric_mean_token_probability",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": 0.6978765865,
+          "ci_low": 0.6631058574,
+          "condition": "direct",
+          "mean": 0.6798179471,
+          "n": 20
+        },
+        {
+          "ci_high": 0.6922286613,
+          "ci_low": 0.6673397891,
+          "condition": "polite",
+          "mean": 0.6797683848,
+          "n": 20
+        },
+        {
+          "ci_high": 0.8640015156,
+          "ci_low": 0.7963213698,
+          "condition": "multi_turn",
+          "mean": 0.8301576581,
+          "n": 20
+        },
+        {
+          "ci_high": 0.8584997998,
+          "ci_low": 0.7885408663,
+          "condition": "polite_multi_turn",
+          "mean": 0.8227687173,
+          "n": 20
+        }
+      ],
+      "sha256": "0561cabb14219338c85b7dd0177f4834d280f063dce5788019bcded52e0355dc",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_first16_logprob.png",
+      "height": 1440,
+      "metric": "mean_first_16_token_logprob",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": -0.2524855763,
+          "ci_low": -0.3618153702,
+          "condition": "direct",
+          "mean": -0.3067461736,
+          "n": 20
+        },
+        {
+          "ci_high": -0.2334312495,
+          "ci_low": -0.3325961737,
+          "condition": "polite",
+          "mean": -0.2821177113,
+          "n": 20
+        },
+        {
+          "ci_high": -0.1408345535,
+          "ci_low": -0.2338028035,
+          "condition": "multi_turn",
+          "mean": -0.1872512072,
+          "n": 20
+        },
+        {
+          "ci_high": -0.132321174,
+          "ci_low": -0.2339888528,
+          "condition": "polite_multi_turn",
+          "mean": -0.1830366493,
+          "n": 20
+        }
+      ],
+      "sha256": "d29ea93ca0b23ff6f21725339c6722e6f9542b9acd5caf21e48ea08c788e744e",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    },
+    {
+      "comparisons": [],
+      "conditions": [
+        "direct",
+        "polite",
+        "multi_turn",
+        "polite_multi_turn"
+      ],
+      "created_by_script_version": "1.0.0",
+      "dpi": 300,
+      "filename": "qwen_entropy.png",
+      "height": 1440,
+      "metric": "mean_token_entropy",
+      "n": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "plotted_values": [
+        {
+          "ci_high": 0.8004660911,
+          "ci_low": 0.6972907051,
+          "condition": "direct",
+          "mean": 0.748811158,
+          "n": 20
+        },
+        {
+          "ci_high": 0.7904347343,
+          "ci_low": 0.7120340907,
+          "condition": "polite",
+          "mean": 0.7492771761,
+          "n": 20
+        },
+        {
+          "ci_high": 0.4731115254,
+          "ci_low": 0.2984696643,
+          "condition": "multi_turn",
+          "mean": 0.3836003754,
+          "n": 20
+        },
+        {
+          "ci_high": 0.4857267204,
+          "ci_low": 0.3199718609,
+          "condition": "polite_multi_turn",
+          "mean": 0.4019334118,
+          "n": 20
+        }
+      ],
+      "sha256": "868feda42267e2724a7d0a1b158ea7c95f2bc4f102ebe791c020d2e5bb243dda",
+      "source_tables": [
+        "qwen_token_probability_summary.csv"
+      ],
+      "subset": "all",
+      "verification_status": "generated_and_technically_verified",
+      "width": 2160
+    }
+  ],
+  "missing_safe_artifacts": [
+    "qwen_polite_direct_paired.png",
+    "qwen_harmfulness_delta_scatter.png"
+  ],
+  "status": "BLOCKED_PRIVATE_INPUT"
+}
