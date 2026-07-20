@@ -90,3 +90,38 @@ def test_generates_public_paired_figure(tmp_path) -> None:
     assert output.stat().st_size > 0
     assert image.shape[0] > 100
     assert image.shape[1] > image.shape[0]
+
+
+def test_generates_fixed_continuation_paired_figure(tmp_path) -> None:
+    source = tmp_path / "fixed.csv"
+    fields = [
+        "subset",
+        "comparison",
+        "metric",
+        "n_pairs",
+        "mean_difference",
+        "ci_low",
+        "ci_high",
+    ]
+    with source.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for comparison_index, comparison in enumerate(COMPARISONS):
+            for metric_index, metric in enumerate(PAIRED_METRICS):
+                estimate = (comparison_index - 1) / 10 + metric_index / 100
+                writer.writerow(
+                    {
+                        "subset": "harmful",
+                        "comparison": comparison,
+                        "metric": metric,
+                        "n_pairs": 10,
+                        "mean_difference": estimate,
+                        "ci_low": estimate - 0.05,
+                        "ci_high": estimate + 0.05,
+                    }
+                )
+    output = tmp_path / "fixed.png"
+    generate_paired_figure(source, output, "fixed_continuation")
+    image = mpimg.imread(output)
+    assert output.stat().st_size > 0
+    assert image.shape[1] > image.shape[0]
