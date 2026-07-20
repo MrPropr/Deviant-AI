@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from src.analyze_token_probabilities import CONDITIONS, METRICS
-from src.run_local_model import DEFAULT_MODEL_ID
+from src.run_local_model import DEFAULT_MODEL_ID, SUPPORTED_MODEL_IDS
 from src.score_response_logprobs import (
     RunningTokenMetrics,
     TeacherForcingBackend,
@@ -553,8 +553,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def run(args: argparse.Namespace, backend: Any | None = None) -> dict[str, int]:
-    if args.model_id != DEFAULT_MODEL_ID:
-        raise ValueError(f"--model-id must be {DEFAULT_MODEL_ID}")
+    if args.model_id not in SUPPORTED_MODEL_IDS:
+        raise ValueError(f"Unsupported --model-id: {args.model_id}")
     if args.chunk_size < 1:
         raise ValueError("--chunk-size must be positive")
     if not args.validate_only and args.output is None:

@@ -7,7 +7,9 @@ import torch
 
 from src.score_response_logprobs import (
     RunningTokenMetrics,
+    append_jsonl,
     build_context_messages,
+    read_jsonl,
     validate_safe_output_record,
 )
 
@@ -254,3 +256,11 @@ def test_numeric_output_is_accepted() -> None:
             "scoring_status": "ok",
         }
     )
+
+
+def test_atomic_jsonl_checkpoint_preserves_complete_records(tmp_path) -> None:
+    output = tmp_path / "private" / "scores.jsonl"
+    append_jsonl(output, {"record": 1})
+    append_jsonl(output, {"record": 2})
+    assert read_jsonl(output) == [{"record": 1}, {"record": 2}]
+    assert not list(output.parent.glob(".*.tmp"))

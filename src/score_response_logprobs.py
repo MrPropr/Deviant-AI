@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .run_local_model import load_yaml, resolve_settings
+from .run_local_model import load_yaml, resolve_settings, tokenize_chat_messages
 from .validate_prompt_variants import (
     CONDITION_TURN_COUNTS,
     is_git_ignored,
@@ -317,23 +317,39 @@ def append_jsonl(
     path: Path,
     record: dict,
 ) -> None:
-    path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
+    existing = (
+        read_jsonl(path)
+        if path.exists()
+        else []
+    )
+    existing.append(record)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(
+        f".{path.name}.{os.getpid()}.tmp"
     )
 
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(
-            json.dumps(
-                record,
-                ensure_ascii=True,
-                sort_keys=True,
-                allow_nan=False,
-            )
-            + "\n"
-        )
-        handle.flush()
-        os.fsync(handle.fileno())
+    try:
+        with temporary.open(
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as handle:
+            for row in existing:
+                handle.write(
+                    json.dumps(
+                        row,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        allow_nan=False,
+                    )
+                    + "\n"
+                )
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def sha256_file(path: Path) -> str:
@@ -1089,17 +1105,13 @@ class TeacherForcingBackend:
     ) -> dict[str, Any]:
         torch = self.torch
 
-        prompt_text = (
-            self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-        )
-
-        prompt_inputs = self.tokenizer(
-            prompt_text,
-            return_tensors="pt",
+        prompt_inputs = tokenize_chat_messages(
+            self.tokenizer,
+            messages,
+            tokenize_directly=self.settings.get(
+                "tokenize_chat_template_directly",
+                False,
+            ),
         )
 
         prompt_ids = (
@@ -1126,7 +1138,6 @@ class TeacherForcingBackend:
             response_ids.shape[-1]
         )
 
-        del prompt_text
         del prompt_inputs
         del response_inputs
 

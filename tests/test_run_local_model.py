@@ -8,10 +8,14 @@ import pytest
 from src.generate_prompt_variants import generate_templates
 from src.run_local_model import (
     DryRunBackend,
+    GEMMA_MODEL_ID,
     GenerationResult,
+    generation_eos_token_ids,
     generation_termination_metadata,
+    load_yaml,
     resolve_settings,
     run_prompt_records,
+    tokenize_chat_messages,
 )
 
 
@@ -71,8 +75,95 @@ def pilot_config(compute_dtype: str = "float16") -> dict:
     }
 
 
+class RecordingTokenizer:
+    eos_token_id = 1
+
+    def __init__(self) -> None:
+        self.apply_calls: list[dict] = []
+        self.tokenizer_calls: list[tuple[str, str]] = []
+
+    def apply_chat_template(self, messages: list[dict], **kwargs):
+        del messages
+        self.apply_calls.append(dict(kwargs))
+        if kwargs["tokenize"]:
+            return {"input_ids": "direct-token-ids"}
+        return "[SANITIZED_CHAT_TEMPLATE]"
+
+    def __call__(self, text: str, return_tensors: str):
+        self.tokenizer_calls.append((text, return_tensors))
+        return {"input_ids": "retokenized-input-ids"}
+
+    def get_vocab(self) -> dict[str, int]:
+        return {"<end_of_turn>": 107}
+
+
 def test_compute_dtype_is_loaded_from_config() -> None:
     assert resolve_settings(pilot_config())["compute_dtype"] == "float16"
+
+
+def test_gemma_expanded_config_is_supported() -> None:
+    settings = resolve_settings(
+        load_yaml(Path("configs/gemma_expanded_pilot.yaml"))
+    )
+    assert settings == {
+        "model_id": GEMMA_MODEL_ID,
+        "load_in_4bit": True,
+        "quantization_type": "nf4",
+        "compute_dtype": "float16",
+        "max_new_tokens": 1024,
+        "do_sample": False,
+        "seed": 42,
+        "max_multi_turn_length": 3,
+        "tokenize_chat_template_directly": True,
+    }
+
+
+def test_unsupported_model_is_rejected() -> None:
+    config = pilot_config()
+    config["model"]["id"] = "unsupported/model"
+    with pytest.raises(ValueError, match="Unsupported model id"):
+        resolve_settings(config)
+
+
+def test_gemma_chat_template_is_tokenized_directly() -> None:
+    tokenizer = RecordingTokenizer()
+    output = tokenize_chat_messages(
+        tokenizer,
+        [{"role": "user", "content": "[BENIGN_BEHAVIOR_PLACEHOLDER]"}],
+        tokenize_directly=True,
+    )
+    assert output == {"input_ids": "direct-token-ids"}
+    assert tokenizer.apply_calls == [
+        {
+            "tokenize": True,
+            "add_generation_prompt": True,
+            "return_dict": True,
+            "return_tensors": "pt",
+        }
+    ]
+    assert tokenizer.tokenizer_calls == []
+
+
+def test_qwen_chat_template_path_remains_unchanged() -> None:
+    tokenizer = RecordingTokenizer()
+    output = tokenize_chat_messages(
+        tokenizer,
+        [{"role": "user", "content": "[BENIGN_BEHAVIOR_PLACEHOLDER]"}],
+        tokenize_directly=False,
+    )
+    assert output == {"input_ids": "retokenized-input-ids"}
+    assert tokenizer.apply_calls == [
+        {"tokenize": False, "add_generation_prompt": True}
+    ]
+    assert tokenizer.tokenizer_calls == [
+        ("[SANITIZED_CHAT_TEMPLATE]", "pt")
+    ]
+
+
+def test_gemma_termination_ids_include_eos_and_end_of_turn() -> None:
+    assert generation_eos_token_ids(
+        RecordingTokenizer(), GEMMA_MODEL_ID
+    ) == [1, 107]
 
 
 def test_unsupported_compute_dtype_is_rejected() -> None:

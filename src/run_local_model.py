@@ -14,6 +14,9 @@ from .validate_prompt_variants import CONDITION_TURN_COUNTS, is_git_ignored, val
 
 
 DEFAULT_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
+GEMMA_MODEL_ID = "google/gemma-2-9b-it"
+SUPPORTED_MODEL_IDS = (DEFAULT_MODEL_ID, GEMMA_MODEL_ID)
+DIRECT_CHAT_TEMPLATE_MODEL_IDS = frozenset({GEMMA_MODEL_ID})
 PLACEHOLDER_RESPONSE = "[MODEL_RESPONSE_PLACEHOLDER]"
 SUPPORTED_COMPUTE_DTYPES = ("float16", "bfloat16", "float32")
 FINISH_REASONS = ("eos", "length", "other", "dry_run")
@@ -116,6 +119,51 @@ def generation_termination_metadata(
     return generated_token_count, hit_max_new_tokens, finish_reason
 
 
+def tokenize_chat_messages(
+    tokenizer: Any,
+    messages: list[dict],
+    *,
+    tokenize_directly: bool,
+) -> Any:
+    if tokenize_directly:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_dict=True,
+            return_tensors="pt",
+        )
+
+    prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+    return tokenizer(prompt, return_tensors="pt")
+
+
+def generation_eos_token_ids(tokenizer: Any, model_id: str) -> int | list[int] | None:
+    eos_token_id = getattr(tokenizer, "eos_token_id", None)
+    values: list[int] = []
+    if isinstance(eos_token_id, int):
+        values.append(eos_token_id)
+    elif eos_token_id is not None:
+        values.extend(token_id_to_int(value) for value in eos_token_id)
+
+    if model_id == GEMMA_MODEL_ID:
+        end_of_turn_id = tokenizer.get_vocab().get("<end_of_turn>")
+        if not isinstance(end_of_turn_id, int):
+            raise RuntimeError("Gemma tokenizer does not define <end_of_turn>")
+        values.append(end_of_turn_id)
+
+    unique_values = list(dict.fromkeys(values))
+    if not unique_values:
+        return None
+    if len(unique_values) == 1:
+        return unique_values[0]
+    return unique_values
+
+
 def response_key(scenario_id: str, condition: str, turn_index: int) -> tuple[str, str, int]:
     return scenario_id, condition, turn_index
 
@@ -162,8 +210,11 @@ def resolve_settings(config: dict, load_in_4bit_override: bool | None = None) ->
     }
     if load_in_4bit_override is not None:
         settings["load_in_4bit"] = load_in_4bit_override
-    if settings["model_id"] != DEFAULT_MODEL_ID:
-        raise ValueError(f"Pilot config model id must be {DEFAULT_MODEL_ID}")
+    if settings["model_id"] not in SUPPORTED_MODEL_IDS:
+        raise ValueError(f"Unsupported model id: {settings['model_id']}")
+    settings["tokenize_chat_template_directly"] = (
+        settings["model_id"] in DIRECT_CHAT_TEMPLATE_MODEL_IDS
+    )
     if settings["do_sample"]:
         raise ValueError("Pilot inference requires do_sample=false")
     if settings["max_multi_turn_length"] != 3:
@@ -201,6 +252,9 @@ class TransformersBackend:
 
         self.torch = torch
         self.model_id = settings["model_id"]
+        self.tokenize_chat_template_directly = settings[
+            "tokenize_chat_template_directly"
+        ]
         set_seed(settings["seed"])
         tokenizer = AutoTokenizer.from_pretrained(self.model_id)
         if not getattr(tokenizer, "chat_template", None):
@@ -220,14 +274,14 @@ class TransformersBackend:
         self.tokenizer = tokenizer
         self.model = AutoModelForCausalLM.from_pretrained(self.model_id, **model_kwargs)
         self.model.eval()
+        self.eos_token_ids = generation_eos_token_ids(tokenizer, self.model_id)
 
     def generate(self, messages: list[dict], max_new_tokens: int, do_sample: bool) -> GenerationResult:
-        prompt = self.tokenizer.apply_chat_template(
+        inputs = tokenize_chat_messages(
+            self.tokenizer,
             messages,
-            tokenize=False,
-            add_generation_prompt=True,
+            tokenize_directly=self.tokenize_chat_template_directly,
         )
-        inputs = self.tokenizer(prompt, return_tensors="pt")
         device = getattr(self.model, "device", None)
         if device is not None:
             inputs = {name: tensor.to(device) for name, tensor in inputs.items()}
@@ -237,14 +291,14 @@ class TransformersBackend:
                 do_sample=do_sample,
                 max_new_tokens=max_new_tokens,
                 pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
+                eos_token_id=self.eos_token_ids,
             )
         prompt_length = inputs["input_ids"].shape[-1]
         new_tokens = generated[0][prompt_length:]
         generated_token_count, hit_max_new_tokens, finish_reason = generation_termination_metadata(
             new_tokens,
             max_new_tokens=max_new_tokens,
-            eos_token_ids=self.tokenizer.eos_token_id,
+            eos_token_ids=self.eos_token_ids,
         )
         return GenerationResult(
             response_text=self.tokenizer.decode(new_tokens, skip_special_tokens=True),
