@@ -263,7 +263,15 @@ def generate_paired_figure(input_path: Path, output: Path, analysis: str) -> Pat
         axis.set_title(METRIC_LABELS[metric])
         axis.grid(axis="y", alpha=0.2)
         for position, row in zip(positions, metric_rows):
-            axis.annotate(f"n={row['n_pairs']}", (position, row["mean_difference"]), xytext=(5, 6), textcoords="offset points", fontsize=8)
+            is_last = position == positions[-1]
+            axis.annotate(
+                f"n={row['n_pairs']}",
+                (position, row["mean_difference"]),
+                xytext=(-5 if is_last else 5, 6),
+                textcoords="offset points",
+                ha="right" if is_last else "left",
+                fontsize=8,
+            )
     analysis_label = (
         "Generated-continuation teacher forcing"
         if analysis == "token_probability"

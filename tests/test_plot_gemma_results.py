@@ -8,9 +8,12 @@ import pytest
 
 from src.plot_gemma_results import (
     BEHAVIORAL_SPECS,
+    COMPARISONS,
     CONDITIONS,
     MODEL_ID,
+    PAIRED_METRICS,
     generate_behavioral_figures,
+    generate_paired_figure,
     read_public_csv,
 )
 
@@ -51,3 +54,39 @@ def test_rejects_private_csv_columns(tmp_path) -> None:
     source.write_text("condition,prompt\ndirect,[SANITIZED_PLACEHOLDER]\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Private columns"):
         read_public_csv(source, {"condition"})
+
+
+def test_generates_public_paired_figure(tmp_path) -> None:
+    source = tmp_path / "paired.csv"
+    fields = [
+        "subset",
+        "comparison",
+        "metric",
+        "n_pairs",
+        "mean_difference",
+        "bootstrap_ci_low",
+        "bootstrap_ci_high",
+    ]
+    with source.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for comparison_index, comparison in enumerate(COMPARISONS):
+            for metric_index, metric in enumerate(PAIRED_METRICS):
+                estimate = (comparison_index - 1) / 10 + metric_index / 100
+                writer.writerow(
+                    {
+                        "subset": "harmful",
+                        "comparison": comparison,
+                        "metric": metric,
+                        "n_pairs": 10,
+                        "mean_difference": estimate,
+                        "bootstrap_ci_low": estimate - 0.05,
+                        "bootstrap_ci_high": estimate + 0.05,
+                    }
+                )
+    output = tmp_path / "paired.png"
+    generate_paired_figure(source, output, "token_probability")
+    image = mpimg.imread(output)
+    assert output.stat().st_size > 0
+    assert image.shape[0] > 100
+    assert image.shape[1] > image.shape[0]
