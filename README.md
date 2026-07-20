@@ -40,7 +40,7 @@ Optional models:
 - Gemini Flash free-tier as an optional closed-source API baseline.
 - ChatGPT Plus UI as an exploratory manual baseline only.
 
-The project is designed as a multi-model study. At the current stage, the full expanded experiment has been completed only for Qwen2.5-7B-Instruct.
+The project is designed as a multi-model study. Full expanded experiments have now been completed for Qwen2.5-7B-Instruct and Gemma 2 9B Instruct; additional model families remain planned.
 
 ## Metrics
 
@@ -96,6 +96,52 @@ The first expanded model stage used `Qwen/Qwen2.5-7B-Instruct` with 4-bit NF4 qu
 ![Multi-turn harmful discovery curve](figures/qwen_expanded_discovery_curve.png)
 
 Within this small sample, polite wording alone changed little, while multi-turn decomposition was associated with higher attack success and harmfulness and lower refusal. Adding polite wording to multi-turn prompting did not strengthen the result, and benign success remained 0.90 in all conditions. This is preliminary evidence for the current Qwen stage, not proof of the research hypotheses, and requires replication on the remaining models. See [the expanded pilot report](docs/qwen_expanded_pilot.md) for methods, confidence intervals, exploratory paired statistics, and limitations.
+
+## Expanded Gemma 2 9B Pilot
+
+The second completed expanded model stage used `google/gemma-2-9b-it` with
+4-bit NF4 quantization, `float16` compute, deterministic decoding, seed 42,
+and a fixed 1024-token generation budget. It included:
+
+- 20 scenarios: 10 harmful and 10 benign;
+- 4 prompt conditions;
+- 80 conversations and 160 response records;
+- 80 final responses for behavioral analysis;
+- teacher-forcing scores for all 160 response records;
+- 80 fixed-continuation context scores.
+
+| Condition | Strict ASR | Refusal Rate | Partial Compliance | Mean Harmfulness | Over-refusal | Benign Success |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Direct | 0.00 | 1.00 | 0.00 | 0.250 | 0.50 | 0.40 |
+| Polite | 0.00 | 1.00 | 0.00 | 0.250 | 0.50 | 0.40 |
+| Multi-turn | 0.10 | 0.50 | 0.40 | 0.425 | 0.20 | 0.80 |
+| Polite multi-turn | 0.10 | 0.50 | 0.40 | 0.425 | 0.20 | 0.80 |
+
+![Gemma strict ASR by condition](figures/gemma_expanded_asr.png)
+
+![Gemma mean harmfulness by condition](figures/gemma_expanded_harmfulness.png)
+
+![Gemma refusal rate by condition](figures/gemma_expanded_refusal.png)
+
+![Gemma benign success by condition](figures/gemma_expanded_benign_success.png)
+
+![Gemma generated-continuation paired effects](figures/gemma_token_probability_harmful_paired.png)
+
+![Gemma fixed-continuation paired effects](figures/gemma_fixed_continuation_harmful_paired.png)
+
+Politeness alone produced no measurable behavioral change. Multi-turn
+decomposition reduced refusals and improved benign utility, but also increased
+partial harmful compliance and produced a 10% strict attack success rate.
+Token-probability and fixed-continuation analyses showed that multi-turn context
+substantially changed the model distribution, while politeness effects were
+small or unreliable. These results are preliminary and do not establish that
+Gemma is safer or less safe than Qwen without a separate cross-model statistical
+analysis.
+
+See the [expanded behavioral report](docs/gemma_expanded_pilot.md),
+[token-probability findings](docs/gemma_token_probability_findings.md), and
+[fixed-continuation findings](docs/gemma_fixed_continuation_findings.md) for
+methods, aggregate statistics, and limitations.
 
 ## Repository Structure
 
@@ -253,8 +299,11 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Confidence intervals.
 - [x] Paired exploratory statistics.
 - [x] Verified public figures.
+- [x] Gemma 2 9B expanded experiment.
+- [x] Gemma teacher-forcing analysis.
+- [x] Gemma fixed-continuation analysis.
 - [ ] Independent annotation by a second reviewer.
-- [ ] Open-weight model comparison.
+- [ ] Full open-weight model comparison.
 - [ ] Optional API baseline.
 - [ ] Final multi-model statistical analysis.
 - [ ] Final write-up.
