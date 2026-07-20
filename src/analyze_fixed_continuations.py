@@ -55,6 +55,23 @@ PAIRED_FIELDS = (
     "wilcoxon_p_value",
 )
 
+DEFAULT_MIN_CELL_SIZE = 5
+
+SUMMARY_SUPPRESSED_FIELDS = (
+    "mean",
+    "standard_deviation",
+    "ci_low",
+    "ci_high",
+)
+
+PAIRED_SUPPRESSED_FIELDS = (
+    "mean_difference",
+    "ci_low",
+    "ci_high",
+    "permutation_p_value",
+    "wilcoxon_p_value",
+)
+
 
 def finite_value(value: object) -> float:
     try:
@@ -240,6 +257,41 @@ def build_paired_rows(
     return output
 
 
+def suppress_small_cells(
+    summary_rows: list[dict],
+    paired_rows: list[dict],
+    min_cell_size: int,
+) -> tuple[list[dict], list[dict]]:
+    if min_cell_size < 1:
+        raise ValueError(
+            "--min-cell-size must be at least 1"
+        )
+
+    public_summary: list[dict] = []
+
+    for row in summary_rows:
+        public_row = dict(row)
+
+        if int(public_row["n"]) < min_cell_size:
+            for field in SUMMARY_SUPPRESSED_FIELDS:
+                public_row[field] = math.nan
+
+        public_summary.append(public_row)
+
+    public_paired: list[dict] = []
+
+    for row in paired_rows:
+        public_row = dict(row)
+
+        if int(public_row["n_pairs"]) < min_cell_size:
+            for field in PAIRED_SUPPRESSED_FIELDS:
+                public_row[field] = math.nan
+
+        public_paired.append(public_row)
+
+    return public_summary, public_paired
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
@@ -248,6 +300,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--bootstrap-iterations", type=int, default=10000)
     parser.add_argument("--permutation-iterations", type=int, default=50000)
+    parser.add_argument(
+        "--min-cell-size",
+        type=int,
+        default=DEFAULT_MIN_CELL_SIZE,
+        help=(
+            "Blank public statistics for cells smaller "
+            "than this size. Counts remain visible."
+        ),
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args(argv)
 
@@ -259,6 +320,8 @@ def run(args: argparse.Namespace) -> dict[str, int]:
         raise ValueError("--bootstrap-iterations must be at least 100")
     if args.permutation_iterations < 100:
         raise ValueError("--permutation-iterations must be at least 100")
+    if args.min_cell_size < 1:
+        raise ValueError("--min-cell-size must be at least 1")
     if args.summary_output == args.paired_output:
         raise ValueError("Summary and paired outputs must be different files.")
     if not args.overwrite and (
@@ -281,6 +344,12 @@ def run(args: argparse.Namespace) -> dict[str, int]:
         permutation_iterations=args.permutation_iterations,
         base_seed=args.seed,
     )
+    summary_rows, paired_rows = suppress_small_cells(
+        summary_rows,
+        paired_rows,
+        min_cell_size=args.min_cell_size,
+    )
+
     write_csv(args.summary_output, summary_rows, list(SUMMARY_FIELDS))
     write_csv(args.paired_output, paired_rows, list(PAIRED_FIELDS))
     print(

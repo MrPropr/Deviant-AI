@@ -132,11 +132,21 @@ The optional `--include-intermediate-turns` flag remains available only for a
 separate diagnostic analysis; it is not enabled in the published final-only
 results.
 
-## Next Experiment With Fixed Continuations
+## Fixed-Continuation Follow-Up
 
-The next experiment should score the same fixed, sanitized continuation under
-each condition. Holding the continuation tokens and length constant would
-separate context sensitivity from differences in what the model happened to
-generate. It should preserve paired scenarios, pre-register the primary
-metric, include termination-stratified checks, and extend the comparison to
-the other planned open-weight model families.
+The fixed-continuation follow-up has now been completed. It scores the
+same direct-anchor continuation under all four contexts, holding the
+continuation token IDs and continuation length constant.
+
+The results show that the large multi-turn pattern from the original
+generated-continuation analysis does not carry over with the same
+direction when response content is fixed. This indicates that generated
+response differences and context-continuation fit were important
+contributors to the original result.
+
+Full results and limitations are documented in
+`docs/qwen_fixed_continuation_findings.md`.
+
+Public sensitivity and fixed-continuation tables apply a minimum cell
+size of five. Counts remain visible for smaller cells, but estimates,
+confidence intervals, and p-values are blank.

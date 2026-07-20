@@ -242,7 +242,10 @@ def test_run_writes_only_the_public_schema(
         )
     )
     assert selected["n"] == "1"
-    assert selected["mean"] == "3.0000000000"
+    assert selected["mean"] == ""
+    assert selected["standard_deviation"] == ""
+    assert selected["ci_low"] == ""
+    assert selected["ci_high"] == ""
 
     console = capsys.readouterr().out
     assert "Input records: 8." in console

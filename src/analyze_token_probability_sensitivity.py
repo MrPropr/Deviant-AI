@@ -42,6 +42,15 @@ OUTPUT_FIELDS = (
     "ci_high",
 )
 
+DEFAULT_MIN_CELL_SIZE = 5
+
+SUPPRESSED_FIELDS = (
+    "mean",
+    "standard_deviation",
+    "ci_low",
+    "ci_high",
+)
+
 REQUIRED_FIELDS = {
     "condition",
     "is_final_turn",
@@ -275,6 +284,29 @@ def build_sensitivity_rows(
     return output
 
 
+def suppress_small_cells(
+    rows: list[dict],
+    min_cell_size: int,
+) -> list[dict]:
+    if min_cell_size < 1:
+        raise ValueError(
+            "--min-cell-size must be at least 1"
+        )
+
+    output: list[dict] = []
+
+    for row in rows:
+        public_row = dict(row)
+
+        if int(public_row["n"]) < min_cell_size:
+            for field in SUPPRESSED_FIELDS:
+                public_row[field] = math.nan
+
+        output.append(public_row)
+
+    return output
+
+
 def parse_args(
     argv: list[str] | None = None,
 ) -> argparse.Namespace:
@@ -310,6 +342,15 @@ def parse_args(
         type=int,
         default=42,
     )
+    parser.add_argument(
+        "--min-cell-size",
+        type=int,
+        default=DEFAULT_MIN_CELL_SIZE,
+        help=(
+            "Blank public statistics for cells smaller "
+            "than this size. The count remains visible."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -317,6 +358,11 @@ def run(args: argparse.Namespace) -> int:
     if args.bootstrap_iterations < 100:
         raise ValueError(
             "--bootstrap-iterations must be at least 100"
+        )
+
+    if args.min_cell_size < 1:
+        raise ValueError(
+            "--min-cell-size must be at least 1"
         )
 
     if not args.validate_only and args.output is None:
@@ -352,6 +398,11 @@ def run(args: argparse.Namespace) -> int:
             args.include_intermediate_turns
         ),
     )
+    summary_rows = suppress_small_cells(
+        summary_rows,
+        min_cell_size=args.min_cell_size,
+    )
+
     write_csv(
         Path(args.output),
         summary_rows,

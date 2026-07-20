@@ -226,3 +226,81 @@ def test_continuation_token_count_is_analyzed_but_not_exposed_per_scenario() -> 
     )
     assert selected["n"] == 2
     assert selected["mean"] == 12.0
+
+
+
+def test_default_public_run_suppresses_small_cells(
+    tmp_path,
+) -> None:
+    input_path = tmp_path / "private_detail.jsonl"
+    summary_path = tmp_path / "summary.csv"
+    paired_path = tmp_path / "paired.csv"
+
+    write_jsonl(
+        input_path,
+        make_detail_rows(3),
+    )
+
+    args = parse_args(
+        [
+            "--input",
+            str(input_path),
+            "--summary-output",
+            str(summary_path),
+            "--paired-output",
+            str(paired_path),
+            "--bootstrap-iterations",
+            "100",
+            "--permutation-iterations",
+            "100",
+        ]
+    )
+
+    run(args)
+
+    with summary_path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        summary_rows = list(csv.DictReader(handle))
+
+    with paired_path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        paired_rows = list(csv.DictReader(handle))
+
+    summary_row = next(
+        row
+        for row in summary_rows
+        if (
+            row["subset"] == "all"
+            and row["condition"] == "direct"
+            and row["metric"] == "mean_token_logprob"
+        )
+    )
+
+    assert summary_row["n"] == "3"
+    assert summary_row["mean"] == ""
+    assert summary_row["standard_deviation"] == ""
+    assert summary_row["ci_low"] == ""
+    assert summary_row["ci_high"] == ""
+
+    paired_row = next(
+        row
+        for row in paired_rows
+        if (
+            row["subset"] == "all"
+            and row["comparison"] == "polite_minus_direct"
+            and row["metric"] == "mean_token_logprob"
+        )
+    )
+
+    assert paired_row["n_pairs"] == "3"
+    assert paired_row["mean_difference"] == ""
+    assert paired_row["ci_low"] == ""
+    assert paired_row["ci_high"] == ""
+    assert paired_row["permutation_p_value"] == ""
+    assert paired_row["wilcoxon_p_value"] == ""
