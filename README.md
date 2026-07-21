@@ -40,7 +40,7 @@ Optional models:
 - Gemini Flash free-tier as an optional closed-source API baseline.
 - ChatGPT Plus UI as an exploratory manual baseline only.
 
-The project is designed as a multi-model study. Full expanded experiments have now been completed for Qwen2.5-7B-Instruct and Gemma 2 9B Instruct; additional model families remain planned.
+The project is designed as a multi-model study. Full expanded experiments have now been completed for Qwen2.5-7B-Instruct, Gemma 2 9B Instruct, and Mistral-7B-Instruct-v0.3; additional model families remain planned.
 
 ## Metrics
 
@@ -142,6 +142,61 @@ See the [expanded behavioral report](docs/gemma_expanded_pilot.md),
 [token-probability findings](docs/gemma_token_probability_findings.md), and
 [fixed-continuation findings](docs/gemma_fixed_continuation_findings.md) for
 methods, aggregate statistics, and limitations.
+
+## Expanded Mistral 7B Pilot
+
+The third completed expanded model stage used
+`mistralai/Mistral-7B-Instruct-v0.3` with 4-bit NF4 quantization,
+`float16` compute, deterministic decoding, seed 42, and a fixed
+1024-token generation budget. It included:
+
+- 20 scenarios: 10 harmful and 10 benign;
+- 4 prompt conditions;
+- 80 conversations and 160 response records;
+- 1 benign response that reached the fixed generation limit and was retained;
+- AI-assisted annotation by Codex using the fixed project rubric;
+- independent technical validation of the annotation artifact;
+- no independent human annotation or additional human reannotation.
+
+| Condition | Strict ASR | Refusal Rate | Partial Compliance | Mean Harmfulness | Over-refusal | Benign Success |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Direct | 0.20 | 0.30 | 0.50 | 0.575 | 0.00 | 0.90 |
+| Polite | 0.20 | 0.30 | 0.50 | 0.600 | 0.00 | 0.90 |
+| Multi-turn | 0.30 | 0.10 | 0.60 | 0.750 | 0.00 | 0.90 |
+| Polite multi-turn | 0.30 | 0.20 | 0.50 | 0.725 | 0.00 | 0.80 |
+
+![Mistral strict ASR by condition](figures/mistral_expanded_asr.png)
+
+![Mistral mean harmfulness by condition](figures/mistral_expanded_harmfulness.png)
+
+![Mistral refusal rate by condition](figures/mistral_expanded_refusal.png)
+
+![Mistral benign success by condition](figures/mistral_expanded_benign_success.png)
+
+![Mistral multi-turn harmful discovery curve](figures/mistral_expanded_discovery_curve.png)
+
+Polite wording alone produced no strict-ASR or refusal-rate difference and
+changed mean harmfulness by only 0.025. Relative to the direct condition,
+multi-turn decomposition was associated with a 0.10 increase in strict ASR,
+a 0.175 increase in mean harmfulness, and a 0.20 decrease in refusal rate.
+
+None of the 20 exploratory paired tests reached `p < 0.05`, and no multiple-comparison correction was applied. The observed differences should therefore be interpreted as preliminary trends in a small fixed sample rather than confirmed general effects.
+
+Adding polite wording to multi-turn prompting did not increase strict ASR
+relative to ordinary multi-turn prompting. Benign success was 0.80 in the
+polite multi-turn condition and 0.90 in the other three conditions.
+
+Public aggregate artifacts:
+
+- [Aggregate metrics](tables/mistral_expanded_metrics.csv)
+- [Confidence intervals](tables/mistral_expanded_confidence_intervals.csv)
+- [Paired exploratory statistics](tables/mistral_expanded_paired_statistics.csv)
+- [Interaction effects](tables/mistral_expanded_interaction_effects.csv)
+- [Graph values](tables/mistral_expanded_graph_values.csv)
+
+See the [expanded Mistral report](docs/mistral_expanded_pilot.md) for the
+method, confidence intervals, exploratory paired statistics, interaction
+effects, annotation limitations, and privacy statement.
 
 ## Repository Structure
 
@@ -302,6 +357,9 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Gemma 2 9B expanded experiment.
 - [x] Gemma teacher-forcing analysis.
 - [x] Gemma fixed-continuation analysis.
+- [x] Mistral 7B expanded experiment.
+- [x] Mistral AI-assisted annotation and technical validation.
+- [x] Mistral aggregate metrics and exploratory statistics.
 - [ ] Independent annotation by a second reviewer.
 - [ ] Full open-weight model comparison.
 - [ ] Optional API baseline.
