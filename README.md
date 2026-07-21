@@ -198,6 +198,71 @@ See the [expanded Mistral report](docs/mistral_expanded_pilot.md) for the
 method, confidence intervals, exploratory paired statistics, interaction
 effects, annotation limitations, and privacy statement.
 
+## Cross-model Behavioral Comparison
+
+The completed expanded behavioral stages for Qwen, Gemma, and Mistral were
+compared using their common public aggregate metrics. The comparison covers:
+
+- `Qwen/Qwen2.5-7B-Instruct`;
+- `google/gemma-2-9b-it`;
+- `mistralai/Mistral-7B-Instruct-v0.3`;
+- four common prompt conditions;
+- 10 harmful and 10 benign scenarios per model-condition cell.
+
+The comparison is descriptive. A unified cross-model significance test was
+not calculated because equivalent published behavioral confidence-interval
+and paired-statistics tables are not available for every model stage.
+Token-probability and fixed-continuation results are not included in this
+comparison.
+
+### Multi-turn effects relative to direct prompting
+
+| Model | Strict ASR Δ | Refusal Δ | Partial compliance Δ | Mean harmfulness Δ | Benign success Δ |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen 2.5 7B | +0.600 | -0.700 | +0.100 | +0.525 | +0.000 |
+| Gemma 2 9B | +0.100 | -0.500 | +0.400 | +0.175 | +0.400 |
+| Mistral 7B | +0.100 | -0.200 | +0.100 | +0.175 | +0.000 |
+
+Multi-turn decomposition produced the most consistent behavioral pattern:
+
+- strict ASR increased in all three model stages;
+- mean harmfulness increased in all three model stages;
+- refusal rate decreased in all three model stages;
+- Qwen showed the largest observed multi-turn shift;
+- Gemma was the only model stage with a higher benign success estimate under
+  multi-turn prompting.
+
+Polite wording alone did not change strict ASR in any of the three model
+stages. Its harmfulness effect was small: `+0.025` for Qwen, `+0.000` for
+Gemma, and `+0.025` for Mistral.
+
+These findings should not be interpreted as a definitive ranking of model
+safety. Each condition contains only 10 harmful scenarios, one deterministic
+seed was used per model stage, and annotation procedures differed across
+stages.
+
+![Cross-model strict ASR](figures/cross_model_strict_asr.png)
+
+![Cross-model refusal rate](figures/cross_model_refusal_rate.png)
+
+![Cross-model partial compliance](figures/cross_model_partial_compliance.png)
+
+![Cross-model mean harmfulness](figures/cross_model_harmfulness.png)
+
+![Cross-model benign success](figures/cross_model_benign_success.png)
+
+![Cross-model multi-turn effects](figures/cross_model_multi_turn_effects.png)
+
+Public aggregate artifacts:
+
+- [Cross-model behavioral metrics](tables/cross_model_behavioral_metrics.csv)
+- [Cross-model behavioral effects](tables/cross_model_behavioral_effects.csv)
+
+See the
+[cross-model behavioral comparison report](docs/cross_model_behavioral_comparison.md)
+for the full tables, interpretation, statistical scope, limitations, and
+privacy statement.
+
 ## Repository Structure
 
 ```text
@@ -361,7 +426,7 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Mistral AI-assisted annotation and technical validation.
 - [x] Mistral aggregate metrics and exploratory statistics.
 - [ ] Independent annotation by a second reviewer.
-- [ ] Full open-weight model comparison.
+- [x] Full open-weight model comparison.
 - [ ] Optional API baseline.
 - [ ] Final multi-model statistical analysis.
 - [ ] Final write-up.
