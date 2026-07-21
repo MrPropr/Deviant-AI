@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .validate_prompt_variants import CONDITION_TURN_COUNTS, is_git_ignored, validate_records
+from .validate_prompt_variants import CONDITION_TURN_COUNTS, is_safe_private_output, validate_records
 
 
 DEFAULT_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
@@ -532,7 +532,7 @@ def main() -> None:
     if args.limit is not None and args.limit < 1:
         raise SystemExit("--limit must be positive when provided")
     repo_root = Path(__file__).resolve().parents[1]
-    if not is_git_ignored(args.output, repo_root):
+    if not is_safe_private_output(args.output, repo_root):
         raise SystemExit("Raw output path must be ignored by git")
 
     try:

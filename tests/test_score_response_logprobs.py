@@ -9,6 +9,7 @@ from src.score_response_logprobs import (
     RunningTokenMetrics,
     append_jsonl,
     build_context_messages,
+    load_completed_ids,
     read_jsonl,
     validate_safe_output_record,
 )
@@ -264,3 +265,18 @@ def test_atomic_jsonl_checkpoint_preserves_complete_records(tmp_path) -> None:
     append_jsonl(output, {"record": 2})
     assert read_jsonl(output) == [{"record": 1}, {"record": 2}]
     assert not list(output.parent.glob(".*.tmp"))
+
+
+def test_resume_duplicate_error_does_not_expose_response_identifier(tmp_path) -> None:
+    output = tmp_path / "private" / "scores.jsonl"
+    private_identifier = "PRIVATE_RESPONSE_IDENTIFIER"
+    row = {
+        "response_id": private_identifier,
+        "mean_token_logprob": -1.0,
+        "scoring_status": "ok",
+    }
+    append_jsonl(output, row)
+    append_jsonl(output, row)
+    with pytest.raises(ValueError) as exc_info:
+        load_completed_ids(output)
+    assert private_identifier not in str(exc_info.value)

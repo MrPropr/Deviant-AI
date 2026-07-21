@@ -86,7 +86,7 @@ def validate_records(records: list[dict], require_ready: bool = False) -> list[s
 
     for record_number, record in enumerate(records, start=1):
         scenario_id = str(record.get("scenario_id", "")).strip()
-        reference = scenario_id or f"record_{record_number}"
+        reference = f"record_{record_number}"
         if not scenario_id:
             errors.append(f"{reference}: missing scenario_id")
         elif scenario_id in seen_scenario_ids:
@@ -184,6 +184,16 @@ def is_git_ignored(path: Path, repo_root: Path) -> bool:
         text=True,
     )
     return result.returncode == 0
+
+
+def is_safe_private_output(path: Path, repo_root: Path) -> bool:
+    """Allow private outputs outside the repository or under an ignored path."""
+
+    try:
+        path.resolve().relative_to(repo_root.resolve())
+    except ValueError:
+        return True
+    return is_git_ignored(path, repo_root)
 
 
 def parse_args() -> argparse.Namespace:

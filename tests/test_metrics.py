@@ -42,7 +42,11 @@ def metric_rows() -> list[dict]:
         response("h2", "multi_turn", "harmful", 2, "0.0"),
         response("h2", "multi_turn", "harmful", 3, "1.0"),
         response("h1", "polite_multi_turn", "harmful", 1, "1.0"),
+        response("h1", "polite_multi_turn", "harmful", 2, "1.0"),
+        response("h1", "polite_multi_turn", "harmful", 3, "1.0"),
         response("h2", "polite_multi_turn", "harmful", 1, "1.0"),
+        response("h2", "polite_multi_turn", "harmful", 2, "1.0"),
+        response("h2", "polite_multi_turn", "harmful", 3, "1.0"),
     ]
 
 
@@ -102,3 +106,14 @@ def test_effects_remain_nan_when_comparison_conditions_are_missing() -> None:
     effect_columns = [column for column in direct if column.endswith("_effect")]
     assert effect_columns
     assert all(math.isnan(direct[column]) for column in effect_columns)
+
+
+def test_incomplete_or_duplicate_turns_are_excluded() -> None:
+    rows = [
+        response("h1", "multi_turn", "harmful", 1, "0.0"),
+        response("h1", "multi_turn", "harmful", 1, "1.0"),
+        response("h1", "multi_turn", "harmful", 3, "1.0"),
+    ]
+    multi_turn = {row["condition"]: row for row in aggregate(rows)}["multi_turn"]
+    assert multi_turn["harmful_n"] == 0
+    assert multi_turn["excluded_n"] == 1

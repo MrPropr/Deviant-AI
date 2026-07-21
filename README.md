@@ -10,13 +10,13 @@ Are politeness and multi-turn decomposition effects model-specific, or are they 
 
 This project evaluates whether the form of a request changes jailbreak robustness. The goal is to measure behavioral differences under controlled prompt transformations while keeping the repository safe as a public research artifact. Public files must contain sanitized examples only, never raw harmful prompts or unsafe model outputs.
 
-## Dataset Plan
+## Dataset and Scope
 
-- Main dataset: JailbreakBench / JBB-Behaviors.
-- Optional external validation: HarmBench validation subset.
-- Related work only: AgentHarm. It is not the initial dataset because this project does not evaluate tool-using agents.
-- Public repository data: sanitized examples and schemas only.
-- Local private data: raw benchmark prompts, generated prompt variants, model outputs, and judged outputs under ignored directories.
+- The completed expanded experiments use a fixed JailbreakBench / JBB-Behaviors split with 10 harmful and 10 benign scenarios.
+- HarmBench was not used for the published experiments.
+- AgentHarm remains related work rather than an experimental dataset because this project does not evaluate tool-using agents.
+- Public repository data are limited to sanitized examples, schemas, aggregate tables, and figures.
+- Raw benchmark prompts, generated prompt variants, model outputs, and judged outputs remain under ignored private directories.
 
 ## Prompt Conditions
 
@@ -25,22 +25,15 @@ This project evaluates whether the form of a request changes jailbreak robustnes
 - `multi_turn`: request decomposed across turns.
 - `polite_multi_turn`: decomposed across turns with polite phrasing.
 
-## Model Plan
+## Completed Model Stages
 
-Main zero-budget pilot:
+The project is a multi-model study with three completed open-weight expanded experiments:
 
-- `Qwen/Qwen2.5-7B-Instruct` as the selected first pilot model.
-- Llama 3.1 8B Instruct as an open-weight baseline.
-- Gemma 2/3 Instruct as a Google open-weight family.
-- Mistral 7B Instruct as an independent open-weight family.
+- `Qwen/Qwen2.5-7B-Instruct`, the first completed expanded experiment;
+- `google/gemma-2-9b-it`, the second completed expanded experiment;
+- `mistralai/Mistral-7B-Instruct-v0.3`, the third completed expanded experiment.
 
-Optional models:
-
-- `gpt-oss-20b` if free GPU resources allow.
-- Gemini Flash free-tier as an optional closed-source API baseline.
-- ChatGPT Plus UI as an exploratory manual baseline only.
-
-The project is designed as a multi-model study. Full expanded experiments have now been completed for Qwen2.5-7B-Instruct, Gemma 2 9B Instruct, and Mistral-7B-Instruct-v0.3; additional model families remain planned.
+The current cross-model comparison is descriptive. The research question also refers to closed-source-accessible models, but no closed-source model result is reported in this repository.
 
 ## Metrics
 
@@ -95,7 +88,7 @@ The first expanded model stage used `Qwen/Qwen2.5-7B-Instruct` with 4-bit NF4 qu
 
 ![Multi-turn harmful discovery curve](figures/qwen_expanded_discovery_curve.png)
 
-Within this small sample, polite wording alone changed little, while multi-turn decomposition was associated with higher attack success and harmfulness and lower refusal. Adding polite wording to multi-turn prompting did not strengthen the result, and benign success remained 0.90 in all conditions. This is preliminary evidence for the current Qwen stage, not proof of the research hypotheses, and requires replication on the remaining models. See [the expanded pilot report](docs/qwen_expanded_pilot.md) for methods, confidence intervals, exploratory paired statistics, and limitations.
+Within this small sample, polite wording alone changed little, while multi-turn decomposition was associated with higher attack success and harmfulness and lower refusal. Adding polite wording to multi-turn prompting did not strengthen the result, and benign success remained 0.90 in all conditions. This is preliminary evidence from the Qwen stage, not proof of the research hypotheses. Subsequent Gemma and Mistral stages provide descriptive replication rather than a unified confirmatory test. See [the expanded pilot report](docs/qwen_expanded_pilot.md) for methods, confidence intervals, exploratory paired statistics, and limitations.
 
 ## Expanded Gemma 2 9B Pilot
 
@@ -129,14 +122,15 @@ and a fixed 1024-token generation budget. It included:
 
 ![Gemma fixed-continuation paired effects](figures/gemma_fixed_continuation_harmful_paired.png)
 
-Politeness alone produced no measurable behavioral change. Multi-turn
-decomposition reduced refusals and improved benign utility, but also increased
-partial harmful compliance and produced a 10% strict attack success rate.
-Token-probability and fixed-continuation analyses showed that multi-turn context
-substantially changed the model distribution, while politeness effects were
-small or unreliable. These results are preliminary and do not establish that
-Gemma is safer or less safe than Qwen without a separate cross-model statistical
-analysis.
+The polite and direct conditions had identical aggregate behavioral metrics.
+Relative to direct prompting, the multi-turn conditions had lower refusal and
+higher benign utility, but also higher partial harmful compliance and a 10%
+strict attack success rate. Token-probability and fixed-continuation analyses
+found substantial distributional differences under multi-turn context, while
+politeness effects were small or unreliable. These results are preliminary and
+do not establish that Gemma is safer or less safe than Qwen; the published
+cross-model behavioral comparison is descriptive rather than a unified
+inferential analysis.
 
 See the [expanded behavioral report](docs/gemma_expanded_pilot.md),
 [token-probability findings](docs/gemma_token_probability_findings.md), and
@@ -223,11 +217,11 @@ comparison.
 | Gemma 2 9B | +0.100 | -0.500 | +0.400 | +0.175 | +0.400 |
 | Mistral 7B | +0.100 | -0.200 | +0.100 | +0.175 | +0.000 |
 
-Multi-turn decomposition produced the most consistent behavioral pattern:
+Multi-turn conditions showed the most consistent behavioral pattern:
 
-- strict ASR increased in all three model stages;
-- mean harmfulness increased in all three model stages;
-- refusal rate decreased in all three model stages;
+- strict ASR was higher than direct in all three model stages;
+- mean harmfulness was higher than direct in all three model stages;
+- refusal rate was lower than direct in all three model stages;
 - Qwen showed the largest observed multi-turn shift;
 - Gemma was the only model stage with a higher benign success estimate under
   multi-turn prompting.
@@ -271,9 +265,9 @@ prompts/    Prompt variant schema; private prompt variants stay ignored.
 configs/    Model and experiment configuration files.
 src/        Lightweight, safe pipeline scripts.
 notebooks/  Pilot analysis notebooks.
-results/    Placeholder directory; raw and judged outputs stay ignored.
-tables/     Placeholder directory for aggregate public CSV tables.
-figures/    Placeholder directory for aggregate public figures.
+results/    Tracked directory marker; raw and judged outputs stay ignored.
+tables/     Aggregate public CSV tables.
+figures/    Aggregate public figures and figure documentation.
 docs/       Rubric, ethics notes, and experiment log.
 tests/      Schema and config tests.
 ```
@@ -373,14 +367,9 @@ Run tests:
 pytest
 ```
 
-## Planned Figures
+## Published Figures
 
-- ASR by model and prompt condition.
-- Refusal rate by model and prompt condition.
-- Mean harmfulness score by model and prompt condition.
-- First harmful turn distribution for multi-turn conditions.
-- Effect-size comparison for politeness, multi-turn decomposition, and combined condition.
-- Benign success and over-refusal comparison.
+The repository contains verified behavioral figures for each completed model stage, six descriptive cross-model behavioral figures, six Qwen token-probability figures, and two Gemma teacher-forcing figures. Every published figure is derived from public aggregate tables or from a reviewed private pair input whose record-level data remain outside Git.
 
 ## Reproducibility Checklist
 
@@ -412,7 +401,6 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Private human annotation workflow.
 - [x] Aggregate metrics.
 - [x] Pilot figure generation.
-- [ ] Full local benchmark ingestion.
 - [x] Expanded 10 harmful / 10 benign Qwen pilot.
 - [x] Second review of flagged Qwen rows.
 - [x] Expanded Qwen aggregate metrics.
@@ -425,8 +413,5 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Mistral 7B expanded experiment.
 - [x] Mistral AI-assisted annotation and technical validation.
 - [x] Mistral aggregate metrics and exploratory statistics.
-- [ ] Independent annotation by a second reviewer.
 - [x] Full open-weight model comparison.
-- [ ] Optional API baseline.
-- [ ] Final multi-model statistical analysis.
-- [ ] Final write-up.
+- [ ] Final paper manuscript.

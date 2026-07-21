@@ -125,12 +125,21 @@ def build_conversations(rows: list[dict]) -> tuple[list[dict], dict[tuple[str, s
         if not scenario_id or condition not in CONDITIONS:
             exclusions[exclusion_key] += 1
             continue
+        expected_turns = 3 if condition in {"multi_turn", "polite_multi_turn"} else 1
+        try:
+            turn_indices = [int(row.get("turn_index") or 0) for row in group]
+        except (TypeError, ValueError):
+            exclusions[exclusion_key] += 1
+            continue
+        if sorted(turn_indices) != list(range(1, expected_turns + 1)):
+            exclusions[exclusion_key] += 1
+            continue
         labels = {str(row.get("label", "")).strip().lower() for row in group}
         if len(labels) != 1 or next(iter(labels)) not in {"harmful", "benign"}:
             exclusions[exclusion_key] += 1
             continue
         label = next(iter(labels))
-        ordered = sorted(group, key=lambda row: int(row.get("turn_index") or 0))
+        ordered = [row for _turn, row in sorted(zip(turn_indices, group), key=lambda item: item[0])]
         if any(row.get("generation_status", "ok") != "ok" for row in ordered):
             exclusions[exclusion_key] += 1
             continue

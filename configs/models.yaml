@@ -1,41 +1,19 @@
-pilot_models:
-  first_choice:
-    id: Qwen/Qwen2.5-7B-Instruct
+completed_models:
+  - id: Qwen/Qwen2.5-7B-Instruct
     family: qwen
     access: open-weight
-    role: first zero-budget pilot model
-  alternate_first_choice:
-    id: Qwen/Qwen3-8B
-    family: qwen
+    role: first completed expanded experiment
+  - id: google/gemma-2-9b-it
+    family: gemma
     access: open-weight
-    role: alternate first pilot model
-  open_weight_baselines:
-    - id: meta-llama/Llama-3.1-8B-Instruct
-      family: llama
-      access: open-weight
-      role: open-weight baseline
-    - id: google/gemma-2-9b-it
-      family: gemma
-      access: open-weight
-      role: Google open-weight family baseline
-    - id: mistralai/Mistral-7B-Instruct-v0.3
-      family: mistral
-      access: open-weight
-      role: independent open-weight family baseline
-
-optional_models:
-  - id: gpt-oss-20b
+    role: second completed expanded experiment
+  - id: mistralai/Mistral-7B-Instruct-v0.3
+    family: mistral
     access: open-weight
-    role: optional if free GPU resources allow
-  - id: gemini-flash-free-tier
-    access: closed-source API
-    role: optional closed-source API baseline
-  - id: chatgpt-plus-ui
-    access: manual UI
-    role: exploratory manual baseline only
+    role: third completed expanded experiment
 
 runtime:
   load_large_models: false
   default_dtype: auto
   quantization: none
-  notes: First version is lightweight and should not trigger large model downloads.
+  notes: Model loading is opt-in through the experiment runner and explicit configs.

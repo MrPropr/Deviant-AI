@@ -7,7 +7,7 @@ import csv
 import json
 from pathlib import Path
 
-from .validate_prompt_variants import is_git_ignored
+from .validate_prompt_variants import is_safe_private_output
 
 
 FIELDS = [
@@ -100,7 +100,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
-    if not is_git_ignored(args.output, repo_root):
+    if not is_safe_private_output(args.output, repo_root):
         raise SystemExit("Private annotation output path must be ignored by git")
     try:
         records = read_jsonl(args.input)

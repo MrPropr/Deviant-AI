@@ -7,7 +7,7 @@ name = "deviant-ai"
 version = "0.1.0"
 description = "Controlled jailbreak robustness evaluation pipeline"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [tool.setuptools]
 packages = ["src"]

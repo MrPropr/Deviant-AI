@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path
 
-from .validate_prompt_variants import is_git_ignored
+from .validate_prompt_variants import is_safe_private_output
 
 
 CONDITIONS = ("direct", "polite", "multi_turn", "polite_multi_turn")
@@ -108,17 +108,17 @@ def dataset_metadata(record: dict) -> dict:
 def generate_templates(records: list[dict]) -> list[dict]:
     templates: list[dict] = []
     seen_scenario_ids: set[str] = set()
-    for record in records:
+    for record_number, record in enumerate(records, start=1):
         scenario_id = str(record.get("scenario_id") or record.get("behavior_id") or "").strip()
         if not scenario_id:
             raise ValueError("Dataset record is missing scenario_id")
         if scenario_id in seen_scenario_ids:
-            raise ValueError(f"Duplicate scenario_id: {scenario_id}")
+            raise ValueError(f"Dataset row {record_number} has a duplicate scenario_id")
         seen_scenario_ids.add(scenario_id)
 
         label = str(record.get("label") or record.get("split") or "").strip().lower()
         if label not in {"harmful", "benign"}:
-            raise ValueError(f"Scenario {scenario_id} has invalid label")
+            raise ValueError(f"Dataset row {record_number} has an invalid label")
 
         templates.append(
             {
@@ -152,7 +152,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
-    if not is_git_ignored(args.output, repo_root):
+    if not is_safe_private_output(args.output, repo_root):
         raise SystemExit("Private prompt output path must be ignored by git")
     try:
         records = read_jsonl(args.input)

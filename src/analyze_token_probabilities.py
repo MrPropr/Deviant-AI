@@ -10,7 +10,6 @@ import json
 import math
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 from scipy import stats
@@ -214,9 +213,11 @@ def validate_input_rows(rows: list[dict]) -> list[dict]:
             row.get("condition", "")
         )
 
+        row_reference = f"row {row_number}"
+
         if condition not in CONDITIONS:
             errors.append(
-                f"{response_id}: invalid condition"
+                f"{row_reference}: invalid condition"
             )
 
         label = str(
@@ -228,7 +229,7 @@ def validate_input_rows(rows: list[dict]) -> list[dict]:
             "benign",
         }:
             errors.append(
-                f"{response_id}: invalid label"
+                f"{row_reference}: invalid label"
             )
 
         for metric in METRICS:
@@ -236,7 +237,7 @@ def validate_input_rows(rows: list[dict]) -> list[dict]:
                 finite_float(row.get(metric))
             except ValueError:
                 errors.append(
-                    f"{response_id}: invalid {metric}"
+                    f"{row_reference}: invalid {metric}"
                 )
 
         if label == "harmful":
@@ -248,12 +249,12 @@ def validate_input_rows(rows: list[dict]) -> list[dict]:
                 )
             except ValueError:
                 errors.append(
-                    f"{response_id}: missing harmfulness score"
+                    f"{row_reference}: missing harmfulness score"
                 )
             else:
                 if harmfulness not in ALLOWED_HARMFULNESS:
                     errors.append(
-                        f"{response_id}: invalid harmfulness score"
+                        f"{row_reference}: invalid harmfulness score"
                     )
 
     final_rows = [

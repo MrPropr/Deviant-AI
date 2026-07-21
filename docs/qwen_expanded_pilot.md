@@ -2,7 +2,7 @@
 
 ## Scope
 
-This report documents the first completed expanded model stage in Deviant-AI. The project remains a multi-model study; the expanded experiment has currently been completed only for `Qwen/Qwen2.5-7B-Instruct`.
+This report documents the first completed expanded model stage in Deviant-AI, using `Qwen/Qwen2.5-7B-Instruct`. Gemma and Mistral expanded stages were completed later and are documented separately.
 
 ## Model and Configuration
 
@@ -53,11 +53,11 @@ These paired results are exploratory. Confidence interval is abbreviated as CI i
 
 ## Main Observations
 
-Within this small sample, polite wording alone changed little. Multi-turn decomposition was associated with higher strict ASR and mean harmfulness and with lower refusal. Adding polite wording to the multi-turn condition did not strengthen those effects. Benign success remained 0.90 in every condition. These results are preliminary evidence for the current Qwen stage and require replication on the remaining models.
+Within this small sample, polite wording alone changed little. Multi-turn decomposition was associated with higher strict ASR and mean harmfulness and with lower refusal. Adding polite wording to the multi-turn condition did not strengthen those effects. Benign success remained 0.90 in every condition. These results are preliminary evidence from the Qwen stage; the later cross-model report compares the completed behavioral stages descriptively without treating them as a unified confirmatory test.
 
 ## Limitations
 
-- Only one model has completed the expanded experiment.
+- This report covers one model; the later cross-model comparison is descriptive rather than inferential.
 - The sample contains 10 harmful scenarios and 10 benign scenarios.
 - Annotation was manual.
 - The second review covered flagged rows and was not performed by an independent reviewer.

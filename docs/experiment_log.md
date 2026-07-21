@@ -26,3 +26,16 @@ Use this file to record high-level, public-safe experiment decisions.
 - Completed a second review of 38 flagged rows: 36 scores were confirmed, 2 were revised, and 0 rows were excluded. This was not independent second annotation.
 - Published aggregate metrics, confidence intervals, exploratory paired statistics, interaction effects, verified graph values, and four reproducible figures only.
 - Kept private prompts, raw outputs, annotation tables, and review logs outside the public repository.
+
+## 2026-07-19
+
+- Published aggregate Qwen teacher-forcing token-probability results and six verified figures.
+- Completed the Qwen fixed-continuation follow-up with public aggregate tables.
+- Kept record-level scoring data and private pair inputs outside the repository.
+
+## 2026-07-21
+
+- Completed the expanded `google/gemma-2-9b-it` behavioral, teacher-forcing, and fixed-continuation stages.
+- Completed the expanded `mistralai/Mistral-7B-Instruct-v0.3` behavioral stage with AI-assisted annotation and independent technical validation; no independent human reannotation was performed.
+- Published a descriptive cross-model behavioral comparison for Qwen, Gemma, and Mistral.
+- Published aggregate tables and figures only; no private prompts, responses, identifiers, or annotation rows were added to Git.

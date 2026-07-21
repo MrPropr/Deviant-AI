@@ -8,6 +8,8 @@ import random
 from pathlib import Path
 from typing import Iterable
 
+from .validate_prompt_variants import is_safe_private_output
+
 
 DATASET_ID = "JailbreakBench/JBB-Behaviors"
 DATASET_CONFIG = "behaviors"
@@ -165,6 +167,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    repo_root = Path(__file__).resolve().parents[1]
+    if not is_safe_private_output(args.output, repo_root):
+        raise SystemExit("Private dataset output inside the repository must be ignored by git")
     try:
         if args.dry_run:
             harmful_rows = make_dry_run_rows("harmful", args.harmful_size)

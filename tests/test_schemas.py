@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 import yaml
+import pytest
 
 from src.generate_prompt_variants import CONDITIONS, generate_templates
-from src.validate_prompt_variants import is_git_ignored, validate_records
+from src.validate_prompt_variants import is_git_ignored, is_safe_private_output, validate_records
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,10 +56,25 @@ def test_validator_detects_duplicate_scenario_and_bad_counts() -> None:
     errors = validate_records([templates[0], duplicate])
     assert any("word_count mismatch" in error for error in errors)
     assert any("duplicate scenario_id" in error for error in errors)
+    assert all("scenario_001" not in error for error in errors)
+
+
+def test_template_generation_errors_do_not_expose_scenario_identifiers() -> None:
+    private_identifier = "PRIVATE_SCENARIO_IDENTIFIER"
+    record = sanitized_dataset_record(private_identifier)
+    with pytest.raises(ValueError) as exc_info:
+        generate_templates([record, record])
+    assert private_identifier not in str(exc_info.value)
 
 
 def test_private_prompt_path_is_git_ignored() -> None:
     assert is_git_ignored(ROOT / "prompts" / "private" / "prompt_variants.jsonl", ROOT)
+
+
+def test_private_output_paths_are_ignored_or_outside_the_repository(tmp_path: Path) -> None:
+    assert is_safe_private_output(ROOT / "results" / "raw" / "output.jsonl", ROOT)
+    assert is_safe_private_output(tmp_path / "output.jsonl", ROOT)
+    assert not is_safe_private_output(ROOT / "tables" / "private_output.jsonl", ROOT)
 
 
 def test_sanitized_examples_use_placeholders() -> None:
@@ -80,6 +96,13 @@ def test_configs_load_as_yaml() -> None:
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert isinstance(loaded, dict)
         assert loaded
+
+    models = yaml.safe_load((ROOT / "configs" / "models.yaml").read_text(encoding="utf-8"))
+    assert [model["id"] for model in models["completed_models"]] == [
+        "Qwen/Qwen2.5-7B-Instruct",
+        "google/gemma-2-9b-it",
+        "mistralai/Mistral-7B-Instruct-v0.3",
+    ]
 
     pilot = yaml.safe_load((ROOT / "configs" / "pilot_qwen.yaml").read_text(encoding="utf-8"))
     assert pilot["model"] == {

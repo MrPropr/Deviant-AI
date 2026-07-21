@@ -451,7 +451,7 @@ def validate_experiment(
 
     prompts_by_id: dict[str, dict] = {}
 
-    for prompt_row in prompt_rows:
+    for prompt_row_number, prompt_row in enumerate(prompt_rows, start=1):
         scenario_id = str(
             prompt_row.get(
                 "scenario_id",
@@ -464,8 +464,8 @@ def validate_experiment(
 
         if scenario_id in prompts_by_id:
             errors.append(
-                f"duplicate prompt scenario_id "
-                f"{scenario_id}"
+                f"prompt row {prompt_row_number}: "
+                "duplicate scenario_id"
             )
         else:
             prompts_by_id[scenario_id] = (
@@ -520,6 +520,7 @@ def validate_experiment(
         response_rows,
         start=1,
     ):
+        row_reference = f"response row {row_number}"
         missing_fields = sorted(
             REQUIRED_RESPONSE_FIELDS - set(row)
         )
@@ -553,7 +554,7 @@ def validate_experiment(
 
         if key in responses_by_key:
             errors.append(
-                f"duplicate response key {key}"
+                f"{row_reference}: duplicate response key"
             )
         else:
             responses_by_key[key] = row
@@ -569,8 +570,7 @@ def validate_experiment(
             )
         elif response_id in response_ids:
             errors.append(
-                f"duplicate response_id "
-                f"{response_id}"
+                f"{row_reference}: duplicate response_id"
             )
         else:
             response_ids.add(response_id)
@@ -586,18 +586,18 @@ def validate_experiment(
             != expected_response_id
         ):
             errors.append(
-                f"{response_id}: response_id "
+                f"{row_reference}: response_id "
                 "does not match its key"
             )
 
         if condition not in CONDITION_TURN_COUNTS:
             errors.append(
-                f"{response_id}: invalid condition"
+                f"{row_reference}: invalid condition"
             )
 
         if key not in expected_keys:
             errors.append(
-                f"{response_id}: response key "
+                f"{row_reference}: response key "
                 "does not exist in prompts"
             )
 
@@ -615,22 +615,22 @@ def validate_experiment(
                 != expected_label
             ):
                 errors.append(
-                    f"{response_id}: label mismatch"
+                    f"{row_reference}: label mismatch"
                 )
 
         if row.get("model_id") != expected_model_id:
             errors.append(
-                f"{response_id}: model_id mismatch"
+                f"{row_reference}: model_id mismatch"
             )
 
         if row.get("run_id") != expected_run_id:
             errors.append(
-                f"{response_id}: run_id mismatch"
+                f"{row_reference}: run_id mismatch"
             )
 
         if row.get("generation_status") != "ok":
             errors.append(
-                f"{response_id}: generation_status "
+                f"{row_reference}: generation_status "
                 "must be ok"
             )
 
@@ -643,7 +643,7 @@ def validate_experiment(
             or not response_text
         ):
             errors.append(
-                f"{response_id}: empty response_text"
+                f"{row_reference}: empty response_text"
             )
 
         finish_reason = row.get(
@@ -654,7 +654,7 @@ def validate_experiment(
             ALLOWED_FINISH_REASONS
         ):
             errors.append(
-                f"{response_id}: invalid "
+                f"{row_reference}: invalid "
                 "finish_reason"
             )
 
@@ -674,7 +674,7 @@ def validate_experiment(
             or generated_token_count < 1
         ):
             errors.append(
-                f"{response_id}: invalid "
+                f"{row_reference}: invalid "
                 "generated_token_count"
             )
 
@@ -684,7 +684,7 @@ def validate_experiment(
 
         if not isinstance(hit_max, bool):
             errors.append(
-                f"{response_id}: "
+                f"{row_reference}: "
                 "hit_max_new_tokens must be boolean"
             )
 
@@ -693,7 +693,7 @@ def validate_experiment(
             and hit_max is not True
         ):
             errors.append(
-                f"{response_id}: length response "
+                f"{row_reference}: length response "
                 "must have hit_max_new_tokens=true"
             )
 
@@ -702,7 +702,7 @@ def validate_experiment(
             and hit_max is True
         ):
             errors.append(
-                f"{response_id}: eos response "
+                f"{row_reference}: eos response "
                 "must not hit max_new_tokens"
             )
 
@@ -732,7 +732,7 @@ def validate_experiment(
             != expected_context_count
         ):
             errors.append(
-                f"{response_id}: "
+                f"{row_reference}: "
                 "context_message_count mismatch"
             )
 
@@ -758,11 +758,11 @@ def validate_experiment(
             "extra response keys"
         )
 
-    for (
+    for key_number, (
         scenario_id,
         condition,
         turn_index,
-    ) in actual_keys:
+    ) in enumerate(sorted(actual_keys), start=1):
         if condition not in {
             "multi_turn",
             "polite_multi_turn",
@@ -781,8 +781,7 @@ def validate_experiment(
 
             if previous_key not in actual_keys:
                 errors.append(
-                    f"{scenario_id}/{condition}/"
-                    f"turn_{turn_index}: missing "
+                    f"response key {key_number}: missing "
                     f"previous turn {previous_turn}"
                 )
 
@@ -1527,8 +1526,7 @@ def load_completed_ids(
 
         if response_id in completed:
             raise ValueError(
-                "Resume file contains duplicate "
-                f"response_id {response_id}"
+                "Resume file contains a duplicate response_id"
             )
 
         if row.get("scoring_status") != "ok":

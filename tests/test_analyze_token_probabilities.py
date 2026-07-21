@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from src.analyze_token_probabilities import (
     METRICS,
     bootstrap_mean_ci,
     build_pair_rows,
     sign_flip_permutation_test,
     safe_spearman,
+    validate_input_rows,
 )
 
 
@@ -125,3 +128,21 @@ def test_positive_spearman() -> None:
     )
 
     assert 0.0 <= p_value <= 1.0
+
+
+def test_validation_errors_do_not_expose_response_identifiers() -> None:
+    private_identifier = "PRIVATE_RESPONSE_IDENTIFIER"
+    row = make_row(private_identifier, "invalid", "harmful", -1.0, 0.25)
+    row.update(
+        {
+            "response_id": private_identifier,
+            "turn_index": 1,
+            "model_id": "synthetic-model",
+            "run_id": "synthetic-run",
+            "is_final_turn": True,
+            "hit_max_new_tokens": False,
+        }
+    )
+    with pytest.raises(ValueError) as exc_info:
+        validate_input_rows([row])
+    assert private_identifier not in str(exc_info.value)

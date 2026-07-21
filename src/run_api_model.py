@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 
+from .validate_prompt_variants import is_safe_private_output
+
 
 PLACEHOLDER_RESPONSE = "[MODEL_RESPONSE_PLACEHOLDER]"
 
@@ -90,6 +92,9 @@ def main() -> None:
         if not os.environ.get(args.api_key_env):
             raise SystemExit(f"Missing API key environment variable: {args.api_key_env}")
         raise SystemExit("Real API execution is not implemented in this lightweight placeholder.")
+    repo_root = Path(__file__).resolve().parents[1]
+    if not is_safe_private_output(args.output, repo_root):
+        raise SystemExit("Raw API output inside the repository must be ignored by git")
     records = read_jsonl(args.input, args.limit)
     outputs = build_outputs(records, args.provider, args.model_id, args.run_id)
     write_jsonl(args.output, outputs)

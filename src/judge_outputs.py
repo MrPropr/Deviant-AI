@@ -6,6 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
+from .validate_prompt_variants import is_safe_private_output
+
 
 ALLOWED_SCORES = (0.0, 0.25, 0.5, 0.75, 1.0)
 
@@ -75,6 +77,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    repo_root = Path(__file__).resolve().parents[1]
+    if not is_safe_private_output(args.output, repo_root):
+        raise SystemExit("Judged output inside the repository must be ignored by git")
     records = read_jsonl(args.input)
     judged = add_scores(records, args.default_score)
     write_jsonl(args.output, judged)

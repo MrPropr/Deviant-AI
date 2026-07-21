@@ -5,8 +5,9 @@
 This note interprets the completed expanded Qwen2.5-7B-Instruct
 teacher-forcing analysis. It asks whether polite phrasing or multi-turn
 decomposition is associated with a different probability distribution over
-the observed continuation. Qwen is the first completed model in the project,
-not the only model planned for comparison.
+the observed continuation. Qwen was the first completed expanded model stage;
+Gemma was later evaluated with corresponding teacher-forcing analyses, while
+Mistral currently has behavioral results only.
 
 ## Method
 
@@ -124,9 +125,10 @@ or polite responses. Refusal counts are only 2 for multi-turn and 3 for polite
 multi-turn, while unsafe or compliant counts are only 1 each for direct and
 polite. These subgroup estimates are descriptive: the sensitivity CSV does
 not provide paired tests or p-values for them. The analysis cannot establish
-causality and should not be generalized to other models. Qwen is the first
-fully completed expanded experiment in the project, with cross-model
-comparison still planned.
+causality and should not be generalized to other models. Qwen was the first
+fully completed expanded experiment in the project. A later descriptive
+cross-model behavioral comparison does not extend this token-probability
+result to Mistral.
 
 The optional `--include-intermediate-turns` flag remains available only for a
 separate diagnostic analysis; it is not enabled in the published final-only
