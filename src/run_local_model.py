@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,8 +17,20 @@ from .validate_prompt_variants import CONDITION_TURN_COUNTS, is_git_ignored, val
 
 DEFAULT_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 GEMMA_MODEL_ID = "google/gemma-2-9b-it"
-SUPPORTED_MODEL_IDS = (DEFAULT_MODEL_ID, GEMMA_MODEL_ID)
-DIRECT_CHAT_TEMPLATE_MODEL_IDS = frozenset({GEMMA_MODEL_ID})
+MISTRAL_MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"
+
+SUPPORTED_MODEL_IDS = (
+    DEFAULT_MODEL_ID,
+    GEMMA_MODEL_ID,
+    MISTRAL_MODEL_ID,
+)
+
+DIRECT_CHAT_TEMPLATE_MODEL_IDS = frozenset(
+    {
+        GEMMA_MODEL_ID,
+        MISTRAL_MODEL_ID,
+    }
+)
 PLACEHOLDER_RESPONSE = "[MODEL_RESPONSE_PLACEHOLDER]"
 SUPPORTED_COMPUTE_DTYPES = ("float16", "bfloat16", "float32")
 FINISH_REASONS = ("eos", "length", "other", "dry_run")
@@ -71,10 +85,63 @@ def read_jsonl(path: Path) -> list[dict]:
 
 
 def append_jsonl(path: Path, record: dict) -> None:
+    """Append one JSONL record through an atomic file replacement."""
+
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n")
-        handle.flush()
+
+    existing_bytes = (
+        path.read_bytes()
+        if path.exists()
+        else b""
+    )
+
+    if (
+        existing_bytes
+        and not existing_bytes.endswith(b"\n")
+    ):
+        raise ValueError(
+            "Existing JSONL file does not end "
+            "with a complete line"
+        )
+
+    new_line = (
+        json.dumps(
+            record,
+            ensure_ascii=True,
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+    file_descriptor, temporary_name = (
+        tempfile.mkstemp(
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=path.parent,
+        )
+    )
+
+    temporary_path = Path(temporary_name)
+
+    try:
+        with os.fdopen(
+            file_descriptor,
+            "wb",
+        ) as handle:
+            handle.write(existing_bytes)
+            handle.write(new_line)
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        os.replace(
+            temporary_path,
+            path,
+        )
+
+    finally:
+        temporary_path.unlink(
+            missing_ok=True
+        )
 
 
 def count_words(text: str) -> int:
@@ -180,6 +247,13 @@ def load_completed(path: Path) -> dict[tuple[str, str, int], dict]:
             str(record.get("condition", "")),
             int(record.get("turn_index", 0)),
         )
+
+        if key in completed:
+            raise ValueError(
+                "Resume output contains a duplicate "
+                "completed response key"
+            )
+
         completed[key] = record
     return completed
 

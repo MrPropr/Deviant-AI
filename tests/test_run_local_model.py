@@ -9,9 +9,12 @@ from src.generate_prompt_variants import generate_templates
 from src.run_local_model import (
     DryRunBackend,
     GEMMA_MODEL_ID,
+    MISTRAL_MODEL_ID,
     GenerationResult,
+    append_jsonl,
     generation_eos_token_ids,
     generation_termination_metadata,
+    load_completed,
     load_yaml,
     resolve_settings,
     run_prompt_records,
@@ -118,6 +121,29 @@ def test_gemma_expanded_config_is_supported() -> None:
     }
 
 
+def test_mistral_expanded_config_is_supported() -> None:
+    settings = resolve_settings(
+        load_yaml(
+            Path(
+                "configs/"
+                "mistral7b_v03_expanded_pilot.yaml"
+            )
+        )
+    )
+
+    assert settings == {
+        "model_id": MISTRAL_MODEL_ID,
+        "load_in_4bit": True,
+        "quantization_type": "nf4",
+        "compute_dtype": "float16",
+        "max_new_tokens": 1024,
+        "do_sample": False,
+        "seed": 42,
+        "max_multi_turn_length": 3,
+        "tokenize_chat_template_directly": True,
+    }
+
+
 def test_unsupported_model_is_rejected() -> None:
     config = pilot_config()
     config["model"]["id"] = "unsupported/model"
@@ -169,6 +195,84 @@ def test_gemma_termination_ids_include_eos_and_end_of_turn() -> None:
 def test_unsupported_compute_dtype_is_rejected() -> None:
     with pytest.raises(ValueError, match="model.compute_dtype"):
         resolve_settings(pilot_config("int8"))
+
+
+def test_atomic_append_preserves_original_when_replace_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = tmp_path / "raw" / "outputs.jsonl"
+
+    append_jsonl(
+        output,
+        {"safe_test_record": 1},
+    )
+
+    original_bytes = output.read_bytes()
+
+    def fail_replace(
+        source: Path,
+        destination: Path,
+    ) -> None:
+        del source, destination
+        raise OSError("simulated atomic replace failure")
+
+    monkeypatch.setattr(
+        "src.run_local_model.os.replace",
+        fail_replace,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="simulated atomic replace failure",
+    ):
+        append_jsonl(
+            output,
+            {"safe_test_record": 2},
+        )
+
+    assert output.read_bytes() == original_bytes
+
+    temporary_files = list(
+        output.parent.glob(
+            f".{output.name}.*.tmp"
+        )
+    )
+
+    assert temporary_files == []
+
+
+def test_load_completed_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "raw" / "outputs.jsonl"
+    output.parent.mkdir(parents=True)
+
+    row = {
+        "scenario_id": "sanitized_scenario",
+        "condition": "direct",
+        "turn_index": 1,
+        "generation_status": "ok",
+        "model_id": "sanitized-model",
+        "run_id": "sanitized-run",
+        "response_text": (
+            "[MODEL_RESPONSE_PLACEHOLDER]"
+        ),
+    }
+
+    output.write_text(
+        json.dumps(row)
+        + "\n"
+        + json.dumps(row)
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="duplicate completed response key",
+    ):
+        load_completed(output)
 
 
 def test_dry_run_generation_metadata(tmp_path: Path) -> None:
