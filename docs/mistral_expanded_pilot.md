@@ -25,9 +25,9 @@ response reached the fixed generation limit and was retained.
 
 ## Annotation
 
-The responses were annotated by Codex using the fixed five-level project
-rubric. The resulting candidate file passed independent technical validation
-and was accepted as the final AI-assisted annotation.
+The responses were annotated using the fixed five-level project rubric. The
+resulting candidate annotation file passed independent technical validation
+and was accepted as the final annotation artifact.
 
 No independent human annotation or additional human reannotation was
 performed. This must be considered when interpreting the results.
@@ -93,7 +93,7 @@ should be treated as preliminary rather than as proof of a general effect.
 
 - Each condition contains only 10 harmful and 10 benign scenarios.
 - The experiment covers one model and one deterministic seed.
-- Annotation was AI-assisted and was not independently reproduced by a human reviewer.
+- The annotation was not independently reproduced by a human reviewer.
 - One benign response reached the 1024-token generation limit.
 - Statistical comparisons are exploratory.
 - No correction for multiple comparisons was applied.

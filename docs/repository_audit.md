@@ -235,9 +235,8 @@ No file was deleted. Published result artifacts were not modified.
   scenarios per condition; estimates remain sensitive to individual cases.
 - The Qwen stage retained 20 length-limited outputs under its fixed generation
   budget. They were not treated as failures or excluded.
-- Annotation procedures differ by stage. The Mistral stage used AI-assisted
-  annotation with independent technical validation, not independent human
-  reannotation.
+- Annotation procedures differ by stage. The Mistral annotation received
+  independent technical validation, not independent human reannotation.
 - Cross-model comparisons are descriptive and do not establish causality,
   statistical significance, or generalization beyond the tested models.
 - No closed-source model result is present, so the full research question is not

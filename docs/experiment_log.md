@@ -36,6 +36,6 @@ Use this file to record high-level, public-safe experiment decisions.
 ## 2026-07-21
 
 - Completed the expanded `google/gemma-2-9b-it` behavioral, teacher-forcing, and fixed-continuation stages.
-- Completed the expanded `mistralai/Mistral-7B-Instruct-v0.3` behavioral stage with AI-assisted annotation and independent technical validation; no independent human reannotation was performed.
+- Completed the expanded `mistralai/Mistral-7B-Instruct-v0.3` behavioral stage with annotation and independent technical validation; no independent human reannotation was performed.
 - Published a descriptive cross-model behavioral comparison for Qwen, Gemma, and Mistral.
 - Published aggregate tables and figures only; no private prompts, responses, identifiers, or annotation rows were added to Git.

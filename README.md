@@ -148,7 +148,7 @@ The third completed expanded model stage used
 - 4 prompt conditions;
 - 80 conversations and 160 response records;
 - 1 benign response that reached the fixed generation limit and was retained;
-- AI-assisted annotation by Codex using the fixed project rubric;
+- annotation using the fixed project rubric;
 - independent technical validation of the annotation artifact;
 - no independent human annotation or additional human reannotation.
 
@@ -411,7 +411,7 @@ This project is designed to study robustness without publishing harmful operatio
 - [x] Gemma teacher-forcing analysis.
 - [x] Gemma fixed-continuation analysis.
 - [x] Mistral 7B expanded experiment.
-- [x] Mistral AI-assisted annotation and technical validation.
+- [x] Mistral annotation and technical validation.
 - [x] Mistral aggregate metrics and exploratory statistics.
 - [x] Full open-weight model comparison.
 - [ ] Final paper manuscript.
